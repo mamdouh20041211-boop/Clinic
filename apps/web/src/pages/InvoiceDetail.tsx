@@ -126,15 +126,24 @@ export default function InvoiceDetail() {
   const [whatsappOpening, setWhatsappOpening] = useState(false);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [shareActionPending, setShareActionPending] = useState(false);
+  const [messageShareChannel, setMessageShareChannel] = useState<'whatsapp' | 'telegram' | 'sms' | null>(null);
+  const [messageSharePhone, setMessageSharePhone] = useState('');
+  const [messageShareMessage, setMessageShareMessage] = useState('');
   const shareMenuRef = useRef<HTMLDivElement>(null);
+  const messageShareDialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!shareMenuOpen) return;
+    if (!shareMenuOpen && !messageShareChannel) return;
     const handlePointerDown = (event: { target: object | null }) => {
-      if (!shareMenuRef.current?.contains(event.target as Node)) setShareMenuOpen(false);
+      const target = event.target as Node;
+      if (shareMenuOpen && !shareMenuRef.current?.contains(target)) setShareMenuOpen(false);
+      if (messageShareChannel && !messageShareDialogRef.current?.contains(target)) setMessageShareChannel(null);
     };
     const handleKeyDown = (event: { key?: string }) => {
-      if (event.key === 'Escape') setShareMenuOpen(false);
+      if (event.key === 'Escape') {
+        setShareMenuOpen(false);
+        setMessageShareChannel(null);
+      }
     };
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
@@ -142,7 +151,7 @@ export default function InvoiceDetail() {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [shareMenuOpen]);
+  }, [messageShareChannel, shareMenuOpen]);
 
   const downloadInvoicePdf = async () => {
     setShareMenuOpen(false);
@@ -185,50 +194,73 @@ export default function InvoiceDetail() {
   const buildShareMessage = () => {
     const language = i18n.language.startsWith('ar');
     return language
-      ? `فاتورة ${invoice?.invoiceNumber}\nالمريض: ${invoice?.patient.fullNameAr}\nالإجمالي: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nالمدفوع: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nالمتبقي: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nتم تجهيز ملف PDF للتنزيل. يرجى إرفاقه يدويًا في محادثة واتساب.`
-      : `Invoice ${invoice?.invoiceNumber}\nPatient: ${invoice?.patient.fullNameAr}\nTotal: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nPaid: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nRemaining: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nThe PDF is ready to download. Please attach it manually in WhatsApp.`;
+      ? `فاتورة ${invoice?.invoiceNumber}\nالمريض: ${invoice?.patient.fullNameAr}\nالإجمالي: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nالمدفوع: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nالمتبقي: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nتم تجهيز ملف PDF للتنزيل. يمكن إرفاقه يدويًا عند الحاجة.`
+      : `Invoice ${invoice?.invoiceNumber}\nPatient: ${invoice?.patient.fullNameAr}\nTotal: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nPaid: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nRemaining: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nThe PDF is ready to download. Attach it manually if needed.`;
   };
 
-  const shareInvoiceOnWhatsApp = () => {
-    if (whatsappOpening || shareActionPending) return;
-    const rawPhone = (invoice?.patient.phone || '').replace(/\D/g, '');
-    const phone = rawPhone.startsWith('965') ? rawPhone : rawPhone.length === 8 ? `965${rawPhone}` : rawPhone;
-    if (phone.length < 11 || phone.length > 15) {
+  const normalizePhone = (value: string) => {
+    const rawPhone = value.replace(/\D/g, '');
+    return rawPhone.startsWith('965') ? rawPhone : rawPhone.length === 8 ? `965${rawPhone}` : rawPhone;
+  };
+
+  const openMessageShareDialog = (channel: 'whatsapp' | 'telegram' | 'sms') => {
+    setShareMenuOpen(false);
+    setMessageShareChannel(channel);
+    setMessageSharePhone(normalizePhone(invoice?.patient.phone || ''));
+    setMessageShareMessage(buildShareMessage());
+  };
+
+  const sendMessageShare = () => {
+    if (!messageShareChannel || whatsappOpening || shareActionPending) return;
+    const phone = normalizePhone(messageSharePhone);
+    if (messageShareChannel !== 'telegram' && (phone.length < 11 || phone.length > 15)) {
       showToast({ type: 'error', message: t('invoices.whatsappMissingPhone') });
       return;
     }
-    const message = buildShareMessage();
-    setShareMenuOpen(false);
-    setWhatsappOpening(true);
-    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    const popup = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+
+    const message = messageShareMessage.trim() || buildShareMessage();
+    setShareActionPending(true);
+    const encodedMessage = encodeURIComponent(message);
+    const url = messageShareChannel === 'whatsapp'
+      ? `https://wa.me/${phone}?text=${encodedMessage}`
+      : messageShareChannel === 'telegram'
+        ? `https://t.me/share/url?url=&text=${encodedMessage}`
+        : `sms:?body=${encodedMessage}`;
+
+    if (messageShareChannel === 'whatsapp') setWhatsappOpening(true);
+    const popup = messageShareChannel === 'sms' ? true : window.open(url, '_blank', 'noopener,noreferrer');
+    if (messageShareChannel === 'sms') window.location.href = url;
     if (!popup) {
+      setShareActionPending(false);
       setWhatsappOpening(false);
-      showToast({ type: 'error', message: t('invoices.whatsappBlocked') });
+      showToast({ type: 'error', message: t('invoices.popupBlocked') });
       return;
     }
-    showToast({ type: 'info', message: t('invoices.whatsappOpening') });
-    window.setTimeout(() => setWhatsappOpening(false), 1200);
+    setMessageShareChannel(null);
+    showToast({
+      type: 'info',
+      message: messageShareChannel === 'whatsapp'
+        ? t('invoices.whatsappOpening')
+        : messageShareChannel === 'telegram'
+          ? t('invoices.telegramOpening')
+          : t('invoices.smsOpening'),
+    });
+    window.setTimeout(() => {
+      setShareActionPending(false);
+      setWhatsappOpening(false);
+    }, 1200);
+  };
+
+  const shareInvoiceOnWhatsApp = () => {
+    openMessageShareDialog('whatsapp');
   };
 
   const shareViaTelegram = () => {
-    if (shareActionPending) return;
-    setShareActionPending(true);
-    setShareMenuOpen(false);
-    const url = `https://t.me/share/url?url=&text=${encodeURIComponent(buildShareMessage())}`;
-    const popup = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!popup) showToast({ type: 'error', message: t('invoices.popupBlocked') });
-    else showToast({ type: 'info', message: t('invoices.telegramOpening') });
-    window.setTimeout(() => setShareActionPending(false), 1200);
+    openMessageShareDialog('telegram');
   };
 
   const shareViaSms = () => {
-    if (shareActionPending) return;
-    setShareActionPending(true);
-    setShareMenuOpen(false);
-    window.location.href = `sms:?body=${encodeURIComponent(buildShareMessage())}`;
-    showToast({ type: 'info', message: t('invoices.smsOpening') });
-    window.setTimeout(() => setShareActionPending(false), 1200);
+    openMessageShareDialog('sms');
   };
 
   const copyInvoiceNumber = async () => {
@@ -417,6 +449,95 @@ export default function InvoiceDetail() {
               )}
             </div>
           </div>
+
+          {messageShareChannel && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111844]/40 p-4" role="presentation">
+              <div
+                ref={messageShareDialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="message-share-title"
+                className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#DCE3EF] bg-white p-5 shadow-[0_20px_60px_rgba(16,47,99,0.25)]"
+              >
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div>
+                    <h2 id="message-share-title" className="text-xl font-bold text-[#111844]">
+                      {messageShareChannel === 'whatsapp'
+                        ? t('invoices.shareWhatsApp')
+                        : messageShareChannel === 'telegram'
+                          ? t('invoices.shareTelegram')
+                          : t('invoices.shareSms')}
+                    </h2>
+                    <p className="mt-1 text-sm text-[#667085]">{t('invoices.shareDialogHint')}</p>
+                  </div>
+                  <button type="button" onClick={() => setMessageShareChannel(null)} className="rounded-lg px-2 py-1 text-xl text-[#667085] hover:bg-[#F6F8FC] focus:outline-none focus:ring-2 focus:ring-[#4B5694]" aria-label={t('common.close')}>
+                    ×
+                  </button>
+                </div>
+
+                {messageShareChannel !== 'telegram' && (
+                  <label className="mb-4 block text-sm font-semibold text-[#344054]">
+                    {t('invoices.recipientPhone')}
+                    <input
+                      type="tel"
+                      value={messageSharePhone}
+                      onChange={(event) => setMessageSharePhone(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-[#DCE3EF] px-3 py-2 font-normal text-[#1F2430] outline-none focus:border-[#4B5694] focus:ring-2 focus:ring-[#4B5694]/20"
+                      dir="ltr"
+                      autoFocus
+                    />
+                  </label>
+                )}
+                {messageShareChannel === 'telegram' && (
+                  <label className="mb-4 block text-sm font-semibold text-[#344054]">
+                    {t('invoices.telegramRecipient')}
+                    <input
+                      type="text"
+                      value={messageSharePhone}
+                      onChange={(event) => setMessageSharePhone(event.target.value)}
+                      placeholder={t('invoices.telegramRecipientPlaceholder')}
+                      className="mt-1 w-full rounded-lg border border-[#DCE3EF] px-3 py-2 font-normal text-[#1F2430] outline-none focus:border-[#4B5694] focus:ring-2 focus:ring-[#4B5694]/20"
+                      dir="ltr"
+                      autoFocus
+                    />
+                    <span className="mt-1 block text-xs font-normal text-[#8991A6]">{t('invoices.telegramRecipientHint')}</span>
+                  </label>
+                )}
+
+                <label className="block text-sm font-semibold text-[#344054]">
+                  {t('invoices.customMessage')}
+                  <textarea
+                    value={messageShareMessage}
+                    onChange={(event) => setMessageShareMessage(event.target.value)}
+                    rows={5}
+                    className="mt-1 w-full resize-y rounded-lg border border-[#DCE3EF] px-3 py-2 font-normal text-[#1F2430] outline-none focus:border-[#4B5694] focus:ring-2 focus:ring-[#4B5694]/20"
+                  />
+                </label>
+
+                <div className="mt-4 rounded-xl bg-[#F6F8FC] p-3">
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wider text-[#8991A6]">{t('invoices.messagePreview')}</p>
+                  <p className="max-h-32 overflow-y-auto whitespace-pre-wrap text-sm text-[#344054]">{messageShareMessage || buildShareMessage()}</p>
+                </div>
+
+                <p className="mt-4 text-xs leading-5 text-[#667085]">
+                  {messageShareChannel === 'whatsapp'
+                    ? t('invoices.whatsappLimitation')
+                    : messageShareChannel === 'telegram'
+                      ? t('invoices.telegramLimitation')
+                      : t('invoices.smsLimitation')}
+                </p>
+
+                <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <button type="button" onClick={() => setMessageShareChannel(null)} className="rounded-lg border border-[#DCE3EF] px-4 py-2 text-sm font-semibold text-[#344054] hover:bg-[#F6F8FC] focus:outline-none focus:ring-2 focus:ring-[#4B5694]">
+                    {t('common.cancel')}
+                  </button>
+                  <button type="button" onClick={sendMessageShare} disabled={shareActionPending || whatsappOpening} className="rounded-lg bg-[#111844] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#4B5694] disabled:cursor-wait disabled:opacity-50">
+                    {shareActionPending ? t('invoices.sharing') : messageShareChannel === 'whatsapp' ? t('invoices.sendViaWhatsApp') : messageShareChannel === 'telegram' ? t('invoices.shareNow') : t('invoices.sendSms')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 md:grid-cols-4">
             <div>
