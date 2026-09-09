@@ -182,17 +182,7 @@ export default function InvoiceDetail() {
     try {
       const blob = await invoicesService.getPdfBlob(id!, i18n.language.startsWith('ar') ? 'ar' : 'en');
       const url = window.URL.createObjectURL(blob);
-      const frame = printWindow.document.createElement('iframe');
-      frame.title = t('invoices.printInvoice');
-      frame.src = url;
-      frame.style.cssText = 'border:0;height:100vh;width:100vw;display:block';
-      printWindow.document.body.innerHTML = '';
-      printWindow.document.body.style.margin = '0';
-      printWindow.document.body.appendChild(frame);
-      frame.addEventListener('load', () => {
-        printWindow.focus();
-        printWindow.print();
-      }, { once: true });
+      printWindow.location.replace(url);
       showToast({ type: 'success', message: t('invoices.printReady') });
       window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
     } catch (error) {
