@@ -75,13 +75,11 @@ export default function AppointmentsList() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F6F7FA]">
-        <div className="container mx-auto px-4 py-8">
+      <div className="page-container">
           <PageHeader title={t('sidebar.appointments')} breadcrumbs={[{ label: t('sidebar.appointments') }]} />
           <div className="ui-card p-6 space-y-3">
             <Skeleton className="h-12 rounded-lg" />
             <Skeleton className="h-12 rounded-lg" count={5} />
-          </div>
         </div>
       </div>
     );
@@ -89,10 +87,8 @@ export default function AppointmentsList() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F6F7FA]">
-        <div className="container mx-auto px-4 py-8">
-          <div className="ui-card p-6 text-center text-[#C4362B] text-sm" role="alert">{t('appointments.loadError')}</div>
-        </div>
+      <div className="page-container">
+        <div className="ui-alert" role="alert">{t('appointments.loadError')}</div>
       </div>
     );
   }
@@ -107,8 +103,7 @@ export default function AppointmentsList() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F7FA]">
-      <div className="container mx-auto px-4 py-8">
+    <div className="page-container">
         <PageHeader
           title={t('sidebar.appointments')}
           breadcrumbs={[{ label: t('sidebar.appointments') }]}
@@ -120,7 +115,7 @@ export default function AppointmentsList() {
         />
 
         {/* Controls */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="ui-card mb-6 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             {/* Date Navigation */}
             <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:gap-4">
@@ -178,7 +173,6 @@ export default function AppointmentsList() {
               <option value="CANCELLED">{t('appointments.statusCancelled')}</option>
               <option value="NO_SHOW">{t('appointments.statusNoShow')}</option>
             </select>
-          </div>
         </div>
 
         {/* Calendar View */}

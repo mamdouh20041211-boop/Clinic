@@ -27,7 +27,7 @@ export default function MobileRecordCard({ title, subtitle, children, actions, o
   );
 
   return onClick ? (
-    <div role="button" tabIndex={0} onClick={onClick} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === 'Enter' || event.key === ' ') onClick(); }} className="ui-card block w-full cursor-pointer p-4 text-right transition hover:border-[#B8C5DA] hover:shadow-[var(--shadow-soft-lg)]">
+    <div role="button" tabIndex={0} onClick={onClick} onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === 'Enter' || event.key === ' ') onClick(); }} className="ui-card block w-full cursor-pointer p-4 text-start transition hover:border-[#B8C5DA] hover:shadow-[var(--shadow-soft-lg)]">
       {content}
     </div>
   ) : (
@@ -39,7 +39,7 @@ export function MobileRecordField({ label, value }: { label: ReactNode; value: R
   return (
     <div className="flex min-w-0 items-start justify-between gap-3">
       <span className="shrink-0 text-xs text-[#94A3B8]">{label}</span>
-      <span className="min-w-0 break-words text-left text-[#1F2430]">{value}</span>
+      <span className="min-w-0 break-words text-end text-[#1F2430]">{value}</span>
     </div>
   );
 }

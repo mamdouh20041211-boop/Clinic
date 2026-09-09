@@ -71,7 +71,7 @@ export default function ModalDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:p-6"
+        className="ui-card max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto p-5 sm:p-6"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <h2 id={labelledBy} className="mb-4 text-lg font-semibold text-[#102F63]">{title}</h2>

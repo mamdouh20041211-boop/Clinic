@@ -76,13 +76,11 @@ export default function InvoicesList() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F6F7FA]">
-        <div className="container mx-auto px-4 py-8">
+      <div className="page-container">
           <PageHeader title={t('sidebar.invoices')} breadcrumbs={[{ label: t('sidebar.invoices') }]} />
           <div className="ui-card p-6 space-y-3">
             <Skeleton className="h-12 rounded-lg" />
             <Skeleton className="h-12 rounded-lg" count={5} />
-          </div>
         </div>
       </div>
     );
@@ -90,20 +88,17 @@ export default function InvoicesList() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F6F7FA]">
-        <div className="container mx-auto px-4 py-8">
-          <div className="ui-card p-6 text-center text-[#C4362B] text-sm" role="alert">{t('invoices.loadError')}</div>
-        </div>
+      <div className="page-container">
+        <div className="ui-alert" role="alert">{t('invoices.loadError')}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F7FA]">
-      <div className="container mx-auto px-4 py-8">
+    <div className="page-container">
         <PageHeader title={t('sidebar.invoices')} breadcrumbs={[{ label: t('sidebar.invoices') }]} />
 
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="ui-card mb-6 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <label className="sr-only" htmlFor="invoice-search">{t('invoices.searchLabel')}</label>
             <input
@@ -112,12 +107,12 @@ export default function InvoicesList() {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder={t('invoices.searchPlaceholder')}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#111844] sm:min-w-64 sm:flex-1"
+              className="ui-input sm:min-w-64 sm:flex-1"
             />
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); setSearchParams((current) => { if (e.target.value) current.set('status', e.target.value); else current.delete('status'); current.set('page', '1'); return current; }); }}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#111844] sm:w-auto"
+              className="ui-input sm:w-auto"
             >
               <option value="">{t('common.allStatuses')}</option>
               <option value="DRAFT">{t('invoices.statusDraft')}</option>
@@ -126,14 +121,14 @@ export default function InvoicesList() {
             </select>
             <button
               onClick={() => { setStatusFilter(''); setSearchInput(''); setSearch(''); setPage(1); setSearchParams((current) => { current.delete('status'); current.delete('search'); current.set('page', '1'); return current; }); }}
-              className="px-3 py-2 text-gray-600 hover:text-gray-900"
+              className="btn-ghost px-3 py-2"
             >
               {t(search ? 'invoices.clearSearch' : 'common.clearFilters')}
             </button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="ui-card overflow-hidden">
           {invoices.length === 0 ? (
             <EmptyState title={search ? t('invoices.noMatchingInvoices') : t('invoices.noInvoices')} description={search ? t('invoices.clearSearchHint') : t('common.emptyDescription')} />
           ) : (
@@ -155,19 +150,19 @@ export default function InvoicesList() {
               ))}
             </div>
             <div className="hidden md:block">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+            <table className="ui-table">
+              <thead>
                 <tr>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">{t('invoices.number')}</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">{t('visits.patient')}</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">{t('invoices.total')}</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">{t('invoices.remaining')}</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">{t('invoices.invoiceStatus')}</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">{t('invoices.paymentStatusLabel')}</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">{t('common.date')}</th>
+                  <th>{t('invoices.number')}</th>
+                  <th>{t('visits.patient')}</th>
+                  <th>{t('invoices.total')}</th>
+                  <th>{t('invoices.remaining')}</th>
+                  <th>{t('invoices.invoiceStatus')}</th>
+                  <th>{t('invoices.paymentStatusLabel')}</th>
+                  <th>{t('common.date')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody>
                 {invoices.map((invoice) => (
                   <tr
                     key={invoice.id}
@@ -199,7 +194,6 @@ export default function InvoicesList() {
               <button onClick={() => setPage((currentPage) => { const next = Math.min(data.meta.totalPages, currentPage + 1); setSearchParams((current) => { current.set('page', String(next)); return current; }); return next; })} disabled={page === data.meta.totalPages} className="px-3 py-1.5 rounded border disabled:opacity-40">{t('common.next')}</button>
             </div>
           )}
-        </div>
       </div>
     </div>
   );

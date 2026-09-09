@@ -22,7 +22,7 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions, back
           <h1 className="text-[26px] font-bold text-[#102F63]">{title}</h1>
           {subtitle && <p className="text-sm text-[#64748B] mt-1">{subtitle}</p>}
         </div>
-        {actions && <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">{actions}</div>}
+        {actions && <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto [&>button]:min-h-11">{actions}</div>}
       </div>
     </div>
   );

@@ -60,7 +60,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
       role="presentation"
       onMouseDown={(event) => {
         if (!destructive && event.target === event.currentTarget && !loading) onCancel();
@@ -71,7 +71,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
-        className="ui-card w-full max-w-sm p-6"
+        className="ui-card max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto p-5 sm:p-6"
         ref={dialogRef}
         onMouseDown={(event) => event.stopPropagation()}
       >
@@ -79,13 +79,13 @@ export default function ConfirmDialog({
           {title}
         </h2>
         <p id="confirm-dialog-message" className="mb-5 text-sm text-[#64748B]">{message}</p>
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             ref={cancelRef}
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="rounded-[10px] border border-[#E2E8F0] px-4 py-2 text-sm text-[#64748B]"
+            className="btn-secondary px-4 py-2 text-sm"
           >
             {cancelLabel}
           </button>

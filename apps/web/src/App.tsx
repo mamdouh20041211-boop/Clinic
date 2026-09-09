@@ -23,6 +23,7 @@ const DailyClosingPage = lazy(() => import('./pages/DailyClosingPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 import ProtectedRoute from './components/ProtectedRoute'
 import { ToastProvider } from './contexts/ToastContext'
+import Skeleton from './components/Skeleton'
 
 const queryClient = new QueryClient()
 
@@ -32,7 +33,7 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <ToastProvider>
-            <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#F6F7FA] text-sm text-[#64748B]">Loading...</div>}>
+            <Suspense fallback={<div className="page-container"><div className="ui-card space-y-3 p-6" role="status" aria-live="polite"><Skeleton className="h-7 w-48" /><Skeleton className="h-11 w-full" count={4} /></div></div>}>
             <Routes>
             <Route path="/login" element={<Login />} />
             <Route
