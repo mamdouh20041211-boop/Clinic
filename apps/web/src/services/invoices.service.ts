@@ -140,12 +140,16 @@ class InvoicesService {
     return response.json();
   }
 
-  async downloadPdf(id: string, language: 'ar' | 'en'): Promise<void> {
+  async getPdfBlob(id: string, language: 'ar' | 'en'): Promise<Blob> {
     const response = await fetch(`${apiBaseUrl}/invoices/${id}/pdf?lang=${language}`, {
       headers: this.getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to download invoice PDF');
-    const blob = await response.blob();
+    return response.blob();
+  }
+
+  async downloadPdf(id: string, language: 'ar' | 'en'): Promise<void> {
+    const blob = await this.getPdfBlob(id, language);
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;

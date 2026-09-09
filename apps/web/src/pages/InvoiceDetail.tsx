@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,7 +13,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../contexts/ToastContext';
 import PageHeader from '../components/PageHeader';
 import Skeleton from '../components/Skeleton';
-import { Download, MessageCircle, FileText } from 'lucide-react';
+import { ChevronDown, Copy, Download, FileText, Link as LinkIcon, MessageCircle, Printer, Send, Share2, Smartphone } from 'lucide-react';
 
 export default function InvoiceDetail() {
   const { t, i18n } = useTranslation();
@@ -124,8 +124,28 @@ export default function InvoiceDetail() {
   const [confirmReversePayment, setConfirmReversePayment] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [whatsappOpening, setWhatsappOpening] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [shareActionPending, setShareActionPending] = useState(false);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!shareMenuOpen) return;
+    const handlePointerDown = (event: { target: object | null }) => {
+      if (!shareMenuRef.current?.contains(event.target as Node)) setShareMenuOpen(false);
+    };
+    const handleKeyDown = (event: { key?: string }) => {
+      if (event.key === 'Escape') setShareMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [shareMenuOpen]);
 
   const downloadInvoicePdf = async () => {
+    setShareMenuOpen(false);
     setPdfLoading(true);
     try {
       await invoicesService.downloadPdf(id!, i18n.language.startsWith('ar') ? 'ar' : 'en');
@@ -137,18 +157,48 @@ export default function InvoiceDetail() {
     }
   };
 
+  const printInvoice = async () => {
+    if (shareActionPending) return;
+    setShareActionPending(true);
+    setShareMenuOpen(false);
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!printWindow) {
+      setShareActionPending(false);
+      showToast({ type: 'error', message: t('invoices.popupBlocked') });
+      return;
+    }
+    printWindow.document.title = t('invoices.printInvoice');
+    try {
+      const blob = await invoicesService.getPdfBlob(id!, i18n.language.startsWith('ar') ? 'ar' : 'en');
+      const url = window.URL.createObjectURL(blob);
+      printWindow.location.href = url;
+      showToast({ type: 'success', message: t('invoices.printReady') });
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      printWindow.close();
+      showToast({ type: 'error', message: error instanceof Error ? error.message : t('invoices.pdfDownloadFailed') });
+    } finally {
+      setShareActionPending(false);
+    }
+  };
+
+  const buildShareMessage = () => {
+    const language = i18n.language.startsWith('ar');
+    return language
+      ? `فاتورة ${invoice?.invoiceNumber}\nالمريض: ${invoice?.patient.fullNameAr}\nالإجمالي: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nالمدفوع: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nالمتبقي: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nتم تجهيز ملف PDF للتنزيل. يرجى إرفاقه يدويًا في محادثة واتساب.`
+      : `Invoice ${invoice?.invoiceNumber}\nPatient: ${invoice?.patient.fullNameAr}\nTotal: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nPaid: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nRemaining: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nThe PDF is ready to download. Please attach it manually in WhatsApp.`;
+  };
+
   const shareInvoiceOnWhatsApp = () => {
-    if (whatsappOpening) return;
+    if (whatsappOpening || shareActionPending) return;
     const rawPhone = (invoice?.patient.phone || '').replace(/\D/g, '');
     const phone = rawPhone.startsWith('965') ? rawPhone : rawPhone.length === 8 ? `965${rawPhone}` : rawPhone;
     if (phone.length < 11 || phone.length > 15) {
       showToast({ type: 'error', message: t('invoices.whatsappMissingPhone') });
       return;
     }
-    const language = i18n.language.startsWith('ar');
-    const message = language
-      ? `فاتورة ${invoice?.invoiceNumber}\nالمريض: ${invoice?.patient.fullNameAr}\nالإجمالي: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nالمدفوع: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nالمتبقي: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nتم تجهيز ملف PDF للتنزيل. يرجى إرفاقه يدويًا في محادثة واتساب.`
-      : `Invoice ${invoice?.invoiceNumber}\nPatient: ${invoice?.patient.fullNameAr}\nTotal: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nPaid: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nRemaining: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nThe PDF is ready to download. Please attach it manually in WhatsApp.`;
+    const message = buildShareMessage();
+    setShareMenuOpen(false);
     setWhatsappOpening(true);
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     const popup = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
@@ -159,6 +209,41 @@ export default function InvoiceDetail() {
     }
     showToast({ type: 'info', message: t('invoices.whatsappOpening') });
     window.setTimeout(() => setWhatsappOpening(false), 1200);
+  };
+
+  const shareViaTelegram = () => {
+    if (shareActionPending) return;
+    setShareActionPending(true);
+    setShareMenuOpen(false);
+    const url = `https://t.me/share/url?url=&text=${encodeURIComponent(buildShareMessage())}`;
+    const popup = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!popup) showToast({ type: 'error', message: t('invoices.popupBlocked') });
+    else showToast({ type: 'info', message: t('invoices.telegramOpening') });
+    window.setTimeout(() => setShareActionPending(false), 1200);
+  };
+
+  const shareViaSms = () => {
+    if (shareActionPending) return;
+    setShareActionPending(true);
+    setShareMenuOpen(false);
+    window.location.href = `sms:?body=${encodeURIComponent(buildShareMessage())}`;
+    showToast({ type: 'info', message: t('invoices.smsOpening') });
+    window.setTimeout(() => setShareActionPending(false), 1200);
+  };
+
+  const copyInvoiceNumber = async () => {
+    setShareMenuOpen(false);
+    const invoiceNumber = invoice?.invoiceNumber;
+    if (!invoiceNumber) {
+      showToast({ type: 'error', message: t('invoices.copyFailed') });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(invoiceNumber);
+      showToast({ type: 'success', message: t('invoices.invoiceNumberCopied') });
+    } catch {
+      showToast({ type: 'error', message: t('invoices.copyFailed') });
+    }
   };
 
   const handleRecordPayment = (e: React.FormEvent) => {
@@ -263,12 +348,47 @@ export default function InvoiceDetail() {
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={downloadInvoicePdf} disabled={pdfLoading} className="inline-flex items-center gap-2 rounded-lg border border-[#173B78] px-3 py-2 text-sm font-semibold text-[#173B78] hover:bg-[#EEF3FA] disabled:opacity-50">
-                <Download size={16} /> {pdfLoading ? t('invoices.downloading') : t('invoices.downloadPdf')}
-              </button>
-              <button onClick={shareInvoiceOnWhatsApp} disabled={whatsappOpening} className="inline-flex items-center gap-2 rounded-lg bg-[#128C7E] px-3 py-2 text-sm font-semibold text-white hover:bg-[#0E756A] disabled:cursor-wait disabled:opacity-60">
-                <MessageCircle size={16} /> {whatsappOpening ? t('invoices.whatsappOpening') : t('invoices.shareWhatsApp')}
-              </button>
+              <div className="relative" ref={shareMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShareMenuOpen((open) => !open)}
+                  aria-expanded={shareMenuOpen}
+                  aria-haspopup="menu"
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#111844] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1a237e] focus:outline-none focus:ring-2 focus:ring-[#4B5694] focus:ring-offset-2"
+                >
+                  <Share2 size={16} /> {t('invoices.share')} <ChevronDown size={15} className={shareMenuOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                </button>
+                {shareMenuOpen && (
+                  <div role="menu" className="absolute end-0 top-full z-30 mt-2 w-64 overflow-hidden rounded-xl border border-[#DCE3EF] bg-white p-2 text-sm shadow-[0_16px_40px_rgba(16,47,99,0.18)]">
+                    <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-[#8991A6]">{t('invoices.shareSection')}</p>
+                    <button type="button" role="menuitem" onClick={shareInvoiceOnWhatsApp} disabled={whatsappOpening || shareActionPending} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start font-medium transition hover:bg-[#F6F8FC] focus:bg-[#F6F8FC] focus:outline-none disabled:cursor-wait disabled:opacity-50 text-[#128C7E]">
+                      <MessageCircle size={16} /> {whatsappOpening ? t('invoices.whatsappOpening') : t('invoices.shareWhatsApp')}
+                    </button>
+                    <button type="button" role="menuitem" onClick={shareViaTelegram} disabled={shareActionPending} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start font-medium transition hover:bg-[#F6F8FC] focus:bg-[#F6F8FC] focus:outline-none disabled:cursor-wait disabled:opacity-50 text-[#229ED9]">
+                      <Send size={16} /> {t('invoices.shareTelegram')}
+                    </button>
+                    <button type="button" role="menuitem" onClick={shareViaSms} disabled={shareActionPending} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start font-medium transition hover:bg-[#F6F8FC] focus:bg-[#F6F8FC] focus:outline-none disabled:cursor-wait disabled:opacity-50 text-[#4B5694]">
+                      <Smartphone size={16} /> {t('invoices.shareSms')}
+                    </button>
+                    <div className="my-1 border-t border-[#EEF1F6]" />
+                    <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-[#8991A6]">{t('invoices.exportSection')}</p>
+                    <button type="button" role="menuitem" onClick={downloadInvoicePdf} disabled={pdfLoading || shareActionPending} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start font-medium transition hover:bg-[#F6F8FC] focus:bg-[#F6F8FC] focus:outline-none disabled:cursor-wait disabled:opacity-50 text-[#173B78]">
+                      <Download size={16} /> {pdfLoading ? t('invoices.downloading') : t('invoices.downloadPdf')}
+                    </button>
+                    <button type="button" role="menuitem" onClick={printInvoice} disabled={shareActionPending} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start font-medium transition hover:bg-[#F6F8FC] focus:bg-[#F6F8FC] focus:outline-none disabled:cursor-wait disabled:opacity-50 text-[#173B78]">
+                      <Printer size={16} /> {t('invoices.printInvoice')}
+                    </button>
+                    <div className="my-1 border-t border-[#EEF1F6]" />
+                    <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-[#8991A6]">{t('invoices.copySection')}</p>
+                    <button type="button" role="menuitem" disabled title={t('invoices.invoiceLinkUnavailable')} className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-start font-medium text-[#A8B0C0]">
+                      <LinkIcon size={16} /> {t('invoices.copyInvoiceLink')}
+                    </button>
+                    <button type="button" role="menuitem" onClick={copyInvoiceNumber} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start font-medium transition hover:bg-[#F6F8FC] focus:bg-[#F6F8FC] focus:outline-none text-[#4B5694]">
+                      <Copy size={16} /> {t('invoices.copyInvoiceNumber')}
+                    </button>
+                  </div>
+                )}
+              </div>
               {invoice.status === 'DRAFT' && (
                 <button
                   onClick={() => setConfirmStatus('ISSUED')}
