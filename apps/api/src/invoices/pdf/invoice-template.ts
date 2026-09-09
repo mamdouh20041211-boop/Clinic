@@ -334,6 +334,15 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
   .meta-box .cell .icon {
     color: #111844;
     font-size: 16px;
+    display: inline-flex;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+  }
+  .meta-box .cell .icon svg {
+    display: block;
+    width: 16px;
+    height: 16px;
   }
   .meta-box .cell .label {
     font-size: 8px;

@@ -235,7 +235,7 @@ export default function InvoiceDetail() {
     const url = messageShareChannel === 'whatsapp'
       ? `https://wa.me/${phone}?text=${encodedMessage}`
       : messageShareChannel === 'telegram'
-        ? `https://t.me/share/url?url=&text=${encodedMessage}`
+        ? `https://t.me/share/url?text=${encodedMessage}`
         : `sms:${phone}?body=${encodedMessage}`;
 
     if (messageShareChannel === 'whatsapp') setWhatsappOpening(true);
@@ -349,8 +349,8 @@ export default function InvoiceDetail() {
         )}
 
         {/* Header */}
-        <div className="mb-6 overflow-hidden rounded-2xl border border-[#DCE3EF] bg-white shadow-[0_12px_35px_rgba(16,47,99,0.08)]">
-          <div className="h-2 bg-[#111844]" />
+        <div className="mb-6 overflow-visible rounded-2xl border border-[#DCE3EF] bg-white shadow-[0_12px_35px_rgba(16,47,99,0.08)]">
+          <div className="h-2 rounded-t-2xl bg-[#111844]" />
           <div className="p-4 sm:p-6">
           <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -390,14 +390,14 @@ export default function InvoiceDetail() {
                 </div>
               )}
             </div>
-            <div className="flex w-full min-w-0 flex-wrap gap-2 sm:w-auto sm:justify-end">
+            <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
               <div className="relative" ref={shareMenuRef}>
                 <button
                   type="button"
                   onClick={() => setShareMenuOpen((open) => !open)}
                   aria-expanded={shareMenuOpen}
                   aria-haspopup="menu"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#111844] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1a237e] focus:outline-none focus:ring-2 focus:ring-[#4B5694] focus:ring-offset-2"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#111844] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1a237e] focus:outline-none focus:ring-2 focus:ring-[#4B5694] focus:ring-offset-2 sm:w-auto"
                 >
                   <Share2 size={16} /> {t('invoices.share')} <ChevronDown size={15} className={shareMenuOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
                 </button>
