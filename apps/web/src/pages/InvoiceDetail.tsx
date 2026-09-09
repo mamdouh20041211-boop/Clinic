@@ -13,6 +13,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../contexts/ToastContext';
 import PageHeader from '../components/PageHeader';
 import Skeleton from '../components/Skeleton';
+import { Download, MessageCircle, FileText } from 'lucide-react';
 
 export default function InvoiceDetail() {
   const { t, i18n } = useTranslation();
@@ -121,6 +122,32 @@ export default function InvoiceDetail() {
   const [confirmStatus, setConfirmStatus] = useState<'ISSUED' | 'VOID' | null>(null);
   const [confirmReplacement, setConfirmReplacement] = useState(false);
   const [confirmReversePayment, setConfirmReversePayment] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const downloadInvoicePdf = async () => {
+    setPdfLoading(true);
+    try {
+      await invoicesService.downloadPdf(id!, i18n.language.startsWith('ar') ? 'ar' : 'en');
+      showToast({ type: 'success', message: t('invoices.pdfDownloaded') });
+    } catch (error) {
+      showToast({ type: 'error', message: error instanceof Error ? error.message : t('invoices.pdfDownloadFailed') });
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const shareInvoiceOnWhatsApp = async () => {
+    const phone = (invoice?.patient.phone || '').replace(/\D/g, '');
+    if (!phone) {
+      showToast({ type: 'error', message: t('invoices.whatsappMissingPhone') });
+      return;
+    }
+    const language = i18n.language.startsWith('ar');
+    const message = language
+      ? `فاتورة ${invoice?.invoiceNumber}\nالمريض: ${invoice?.patient.fullNameAr}\nالإجمالي: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nالمدفوع: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nالمتبقي: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nتم تجهيز ملف PDF للتنزيل. يرجى إرفاقه يدويًا في محادثة واتساب.`
+      : `Invoice ${invoice?.invoiceNumber}\nPatient: ${invoice?.patient.fullNameAr}\nTotal: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nPaid: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nRemaining: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nThe PDF is ready to download. Please attach it manually in WhatsApp.`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  };
 
   const handleRecordPayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,10 +209,19 @@ export default function InvoiceDetail() {
         )}
 
         {/* Header */}
-        <div className="mb-6 rounded-lg bg-white p-4 shadow-md sm:p-6">
+        <div className="mb-6 overflow-hidden rounded-2xl border border-[#DCE3EF] bg-white shadow-[0_12px_35px_rgba(16,47,99,0.08)]">
+          <div className="h-2 bg-[#111844]" />
+          <div className="p-4 sm:p-6">
           <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#111844]">{invoice.invoiceNumber}</h1>
+              <div className="mb-3 flex items-center gap-3">
+                <img src="/assets/logo.png" alt="" className="h-12 w-12 object-contain" />
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#4B5694]">{t('invoices.clinicNameEn')}</p>
+                  <p className="text-lg font-bold text-[#111844]">{t('invoices.clinicNameAr')}</p>
+                </div>
+              </div>
+              <h1 className="text-2xl font-bold text-[#111844]">{t('invoices.invoiceTitle')} <span className="text-[#4B5694]">{invoice.invoiceNumber}</span></h1>
               <Link
                 to={preserveListState(`/patients/${invoice.patient.id}`, { pathname: `/invoices/${invoice.id}`, search: '' })}
                 className="text-gray-600 hover:text-[#111844] hover:underline"
@@ -215,6 +251,12 @@ export default function InvoiceDetail() {
               )}
             </div>
             <div className="flex flex-wrap gap-2">
+              <button onClick={downloadInvoicePdf} disabled={pdfLoading} className="inline-flex items-center gap-2 rounded-lg border border-[#173B78] px-3 py-2 text-sm font-semibold text-[#173B78] hover:bg-[#EEF3FA] disabled:opacity-50">
+                <Download size={16} /> {pdfLoading ? t('invoices.downloading') : t('invoices.downloadPdf')}
+              </button>
+              <button onClick={shareInvoiceOnWhatsApp} className="inline-flex items-center gap-2 rounded-lg bg-[#128C7E] px-3 py-2 text-sm font-semibold text-white hover:bg-[#0E756A]">
+                <MessageCircle size={16} /> {t('invoices.shareWhatsApp')}
+              </button>
               {invoice.status === 'DRAFT' && (
                 <button
                   onClick={() => setConfirmStatus('ISSUED')}
@@ -264,10 +306,19 @@ export default function InvoiceDetail() {
               </div>
             )}
           </div>
+          <div className="mt-5 grid gap-3 rounded-xl bg-[#F6F8FC] p-4 text-sm sm:grid-cols-2">
+            <div><span className="text-[#64748B]">{t('invoices.doctor')}</span><p className="font-semibold text-[#111844]">{t('invoices.doctorName')}</p></div>
+            <div><span className="text-[#64748B]">{t('invoices.contact')}</span><p className="font-semibold text-[#111844]">22650700 · 60008977</p></div>
+          </div>
+          </div>
         </div>
 
         {/* Items */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <div className="mb-6 overflow-hidden rounded-2xl border border-[#DCE3EF] bg-white shadow-[0_12px_35px_rgba(16,47,99,0.06)]">
+          <div className="flex items-center gap-2 border-b border-[#E6EBF2] px-4 py-4 sm:px-6">
+            <FileText size={18} className="text-[#4B5694]" />
+            <h2 className="font-bold text-[#111844]">{t('invoices.invoiceItems')}</h2>
+          </div>
           <div className="mobile-record-list p-3 md:hidden">
             {invoice.invoiceItems.map((item) => (
               <div key={item.id} className="ui-card p-4">

@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards, ParseUUIDPipe, Request, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards, ParseUUIDPipe, Request, HttpCode, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { InvoicesService } from './invoices.service';
+import { InvoicePdfService } from './invoice-pdf.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceStatusDto } from './dto/update-invoice-status.dto';
 import { AddChargeDto } from './dto/add-charge.dto';
@@ -13,7 +15,10 @@ import { UserRole, InvoiceStatus } from '@prisma/client';
 @Controller('invoices')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class InvoicesController {
-  constructor(private readonly invoicesService: InvoicesService) {}
+  constructor(
+    private readonly invoicesService: InvoicesService,
+    private readonly invoicePdfService: InvoicePdfService,
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.RECEPTIONIST)
@@ -41,6 +46,23 @@ export class InvoicesController {
   @Roles(UserRole.ADMIN, UserRole.RECEPTIONIST)
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.invoicesService.findOne(id);
+  }
+
+  @Get(':id/pdf')
+  @Roles(UserRole.ADMIN, UserRole.RECEPTIONIST)
+  async pdf(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('lang') lang: string | undefined,
+    @Res() res: Response,
+  ) {
+    const language = lang === 'ar' ? 'ar' : 'en';
+    const pdfBuffer = await this.invoicePdfService.generate(id, language);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="invoice-${id}-${language}.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    });
+    res.end(pdfBuffer);
   }
 
   @Patch(':id/status')

@@ -9,8 +9,24 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  const configuredOrigins = process.env.FRONTEND_URL
+    ?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const allowedOrigins = configuredOrigins?.length
+    ? configuredOrigins
+    : process.env.NODE_ENV === 'production'
+      ? []
+      : ['http://localhost:3000'];
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? undefined : 'http://localhost:3000'),
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Origin is not allowed by CORS'));
+    },
     credentials: true,
   });
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -51,15 +51,39 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F6F8FC] px-6 py-12">
-      <div className="w-full max-w-[400px]">
-        {/* Compact branding */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <h1 className="text-lg font-bold text-[#102F63]">مركز العيادات التخصصية</h1>
+    <div className="min-h-screen bg-[#F4F7FB] lg:grid lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="relative hidden overflow-hidden bg-[#111844] px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between">
+        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#4B5694]/40 blur-3xl" />
+        <div className="relative">
+          <div className="flex items-center gap-4">
+            <img src="/assets/logo.png" alt="" className="h-20 w-20 rounded-2xl bg-white/95 object-contain p-2" />
+            <div>
+              <p className="text-xl font-bold">مركز العيادات التخصصية</p>
+              <p className="mt-1 text-sm text-white/70">Specialized Clinics Center</p>
+            </div>
+          </div>
+          <div className="mt-28 max-w-lg">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.25em] text-[#B9C9E8]">{t('login.tagline')}</p>
+            <h1 className="text-5xl font-bold leading-tight">Care that feels personal.</h1>
+            <p className="mt-6 max-w-md text-base leading-7 text-white/75">{t('login.subtitle')}</p>
+          </div>
         </div>
+        <div className="relative flex items-center gap-3 text-sm text-white/70">
+          <ShieldCheck size={18} /> <span>{t('login.secureAccess')}</span>
+        </div>
+      </section>
 
-        <div className="ui-card p-7">
-          <h2 className="text-[22px] font-bold text-[#102F63] mb-1">{t('login.title')}</h2>
+      <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
+        <div className="w-full max-w-[440px]">
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <img src="/assets/logo.png" alt="" className="h-14 w-14 rounded-xl bg-white object-contain p-1 shadow-sm" />
+            <div>
+              <p className="font-bold text-[#102F63]">مركز العيادات التخصصية</p>
+              <p className="text-xs text-[#64748B]">Specialized Clinics Center</p>
+            </div>
+          </div>
+        <div className="rounded-2xl border border-[#DCE3EF] bg-white p-6 shadow-[0_18px_55px_rgba(16,47,99,0.12)] sm:p-9">
+          <h2 className="text-[28px] font-bold text-[#102F63] mb-1">{t('login.title')}</h2>
           <p className="text-[13px] text-[#64748B] mb-6">{t('login.subtitle')}</p>
 
           {error && (
@@ -144,7 +168,9 @@ export default function Login() {
             </button>
           </form>
         </div>
-      </div>
+        <p className="mt-6 text-center text-xs text-[#94A3B8]">{t('login.copyright')}</p>
+        </div>
+      </main>
     </div>
   );
 }

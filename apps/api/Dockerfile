@@ -24,8 +24,6 @@ COPY package*.json ./
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
 COPY jest.config.js ./
-COPY .env.test ./
-
 RUN npm install
 
 COPY src ./src

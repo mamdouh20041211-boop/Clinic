@@ -7,17 +7,17 @@ import { Decimal } from '@prisma/client/runtime/library';
 export interface InvoicePdfData {
   invoiceNumber: string;
   status: 'DRAFT' | 'ISSUED' | 'VOID';
-  subtotal: number | string;
-  total: number | string;
-  paid: number | string;
-  remaining: number | string;
+  subtotal: number | string | Decimal;
+  total: number | string | Decimal;
+  paid: number | string | Decimal;
+  remaining: number | string | Decimal;
   paymentStatus: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
   issuedAt?: string | Date | null;
   createdAt: string | Date;
   replacedByInvoiceId?: string | null;
   patient: {
     fullNameAr: string;
-    civilId: string;
+    civilId: string | null;
     phone?: string | null;
   };
   visit?: {
@@ -26,19 +26,19 @@ export interface InvoicePdfData {
   } | null;
   invoiceItems: Array<{
     serviceNameSnapshot: string;
-    unitPriceSnapshot: number | string;
+    unitPriceSnapshot: number | string | Decimal;
     quantity: number;
-    lineTotal: number | string;
+    lineTotal: number | string | Decimal;
     service?: { code: string | null } | null;
   }>;
   additionalCharges?: Array<{
     chargeType: 'PERCENTAGE' | 'FIXED';
-    chargeValue: number | string;
-    calculatedAmount: number | string;
+    chargeValue: number | string | Decimal;
+    calculatedAmount: number | string | Decimal;
     description?: string | null;
   }>;
   payments: Array<{
-    amount: number | string;
+    amount: number | string | Decimal;
     method: 'CASH' | 'VISA' | 'KNET' | 'OTHER';
     paymentDate: string | Date;
     status?: 'RECORDED' | 'REVERSED';
@@ -46,8 +46,8 @@ export interface InvoicePdfData {
 }
 
 // Fixed clinic identity — single-doctor clinic, this never changes per invoice.
-const DOCTOR_NAME_AR = 'د. نداء "محمد" خضور';
-const DOCTOR_TITLE_AR = 'استشاري أمراض النساء والولادة والعقم';
+const DOCTOR_NAME_AR = 'د. نداء بوخضور';
+const DOCTOR_TITLE_AR = 'استشاري امراض النساء والولادة والعقم';
 
 const CLINIC_NAME_AR = 'مركز العيادات التخصصية';
 const CLINIC_NAME_EN = 'Specialized Clinics Center';
@@ -78,7 +78,7 @@ const PAYMENT_METHOD_LABELS_EN: Record<InvoicePdfData['payments'][number]['metho
   OTHER: 'OTHER',
 };
 
-function formatMoney(value: number | string): string {
+function formatMoney(value: number | string | Decimal): string {
   return new Decimal(String(value)).toDecimalPlaces(2).toFixed(2);
 }
 
@@ -98,7 +98,65 @@ function escapeHtml(input: string): string {
     .replace(/"/g, '&quot;');
 }
 
-export function renderInvoiceHtml(invoice: InvoicePdfData): string {
+export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en' = 'en'): string {
+  const isArabic = language === 'ar';
+  const labels = isArabic
+    ? {
+        invoice: 'فاتورة',
+        invoiceNo: 'رقم الفاتورة',
+        date: 'التاريخ',
+        patientInfo: 'بيانات المريض',
+        patientName: 'اسم المريض',
+        visitType: 'نوع الزيارة',
+        civilId: 'الرقم المدني',
+        diagnosis: 'التشخيص',
+        mobile: 'رقم الهاتف',
+        doctor: 'الطبيب',
+        service: 'الخدمة',
+        code: 'الرمز',
+        qty: 'الكمية',
+        unitPrice: 'سعر الوحدة (د.ك)',
+        total: 'الإجمالي (د.ك)',
+        subtotal: 'المجموع الفرعي',
+        paid: 'المدفوع',
+        remaining: 'المتبقي',
+        paymentStatus: 'حالة الدفع',
+        paymentMethod: 'طريقة الدفع',
+        additional: 'رسوم إضافية',
+        fixed: 'رسوم ثابتة',
+        percentage: 'رسوم إضافية',
+        visitTypes: { CHECKUP: 'فحص', FOLLOW_UP: 'متابعة', OTHER: 'أخرى' },
+        paymentStatuses: { UNPAID: 'غير مدفوع', PARTIALLY_PAID: 'مدفوع جزئياً', PAID: 'مدفوع بالكامل' },
+        paymentMethods: { CASH: 'نقدي', VISA: 'فيزا', KNET: 'كي نت', OTHER: 'أخرى' },
+      }
+    : {
+        invoice: 'INVOICE',
+        invoiceNo: 'Invoice No.',
+        date: 'Date',
+        patientInfo: 'PATIENT INFORMATION',
+        patientName: 'Patient Name',
+        visitType: 'Visit Type',
+        civilId: 'Civil ID',
+        diagnosis: 'Diagnosis',
+        mobile: 'Mobile Number',
+        doctor: 'Doctor',
+        service: 'SERVICE',
+        code: 'CODE',
+        qty: 'QTY',
+        unitPrice: 'UNIT PRICE (KD)',
+        total: 'TOTAL (KD)',
+        subtotal: 'Subtotal',
+        paid: 'Paid',
+        remaining: 'Remaining',
+        paymentStatus: 'PAYMENT STATUS',
+        paymentMethod: 'PAYMENT METHOD',
+        additional: 'Additional Charge',
+        fixed: 'Fixed Charge',
+        percentage: 'Additional Charge',
+        visitTypes: VISIT_TYPE_LABELS_EN,
+        paymentStatuses: PAYMENT_STATUS_LABELS_EN,
+        paymentMethods: PAYMENT_METHOD_LABELS_EN,
+      };
   const itemsRows = invoice.invoiceItems
     .map(
       (item) => `
@@ -116,7 +174,7 @@ export function renderInvoiceHtml(invoice: InvoicePdfData): string {
   const chargesRows = (invoice.additionalCharges || [])
     .map(
       (charge) => {
-        const chargeLabel = charge.description ? escapeHtml(charge.description) : (charge.chargeType === 'PERCENTAGE' ? 'Additional Charge' : 'Fixed Charge');
+        const chargeLabel = charge.description ? escapeHtml(charge.description) : (charge.chargeType === 'PERCENTAGE' ? labels.percentage : labels.fixed);
         const priceDisplay = charge.chargeType === 'PERCENTAGE' ? formatMoney(charge.chargeValue) + '%' : formatMoney(charge.chargeValue);
         return `
         <tr class="charge-row">
@@ -152,12 +210,12 @@ export function renderInvoiceHtml(invoice: InvoicePdfData): string {
     ? `<div class="replacement-note">This invoice has been replaced. See replacement invoice for current details.</div>`
     : '';
 
-  const visitTypeLabel = invoice.visit ? VISIT_TYPE_LABELS_EN[invoice.visit.type] : '&mdash;';
+  const visitTypeLabel = invoice.visit ? labels.visitTypes[invoice.visit.type] : '&mdash;';
   const diagnosis = invoice.visit?.diagnosis ? escapeHtml(invoice.visit.diagnosis) : '&mdash;';
 
   return `
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="${language}" dir="${isArabic ? 'rtl' : 'ltr'}">
 <head>
 <meta charset="UTF-8" />
 <style>
@@ -453,50 +511,50 @@ export function renderInvoiceHtml(invoice: InvoicePdfData): string {
       <div class="doctor-title">${DOCTOR_TITLE_AR}</div>
     </div>
 
-    <div class="invoice-title"><span class="arrow">&#8594;</span>INVOICE<span class="arrow">&#8592;</span></div>
+    <div class="invoice-title"><span class="arrow">&#8594;</span>${labels.invoice}<span class="arrow">&#8592;</span></div>
 
     <div class="meta-box">
       <div class="cell">
         <span class="icon">&#128196;</span>
         <div>
-          <span class="label">Invoice No.</span>
+          <span class="label">${labels.invoiceNo}</span>
           <span class="value">${escapeHtml(invoice.invoiceNumber)}</span>
         </div>
       </div>
       <div class="cell">
         <span class="icon">&#128197;</span>
         <div>
-          <span class="label">Date</span>
+          <span class="label">${labels.date}</span>
           <span class="value">${formatDate(invoice.issuedAt || invoice.createdAt)}</span>
         </div>
       </div>
     </div>
 
     <div class="patient-box">
-      <div class="patient-title">PATIENT INFORMATION</div>
+      <div class="patient-title">${labels.patientInfo}</div>
       <div class="patient-grid">
         <div class="field">
-          <div class="label">Patient Name</div>
+          <div class="label">${labels.patientName}</div>
           <div class="value ar">${escapeHtml(invoice.patient.fullNameAr)}</div>
         </div>
         <div class="field">
-          <div class="label">Visit Type</div>
+          <div class="label">${labels.visitType}</div>
           <div class="value">${visitTypeLabel}</div>
         </div>
         <div class="field">
-          <div class="label">Civil ID</div>
-          <div class="value">${escapeHtml(invoice.patient.civilId)}</div>
+          <div class="label">${labels.civilId}</div>
+          <div class="value">${invoice.patient.civilId ? escapeHtml(invoice.patient.civilId) : '&mdash;'}</div>
         </div>
         <div class="field">
-          <div class="label">Diagnosis</div>
+          <div class="label">${labels.diagnosis}</div>
           <div class="value ar">${diagnosis}</div>
         </div>
         <div class="field">
-          <div class="label">Mobile Number</div>
+          <div class="label">${labels.mobile}</div>
           <div class="value">${invoice.patient.phone ? escapeHtml(invoice.patient.phone) : '&mdash;'}</div>
         </div>
         <div class="field">
-          <div class="label">Doctor</div>
+          <div class="label">${labels.doctor}</div>
           <div class="value ar">${DOCTOR_NAME_AR}</div>
         </div>
       </div>
@@ -505,11 +563,11 @@ export function renderInvoiceHtml(invoice: InvoicePdfData): string {
     <table class="items">
       <thead>
         <tr>
-          <th class="col-service">SERVICE</th>
-          <th class="col-code">CODE</th>
-          <th class="col-qty">QTY</th>
-          <th class="col-price">UNIT PRICE (KD)</th>
-          <th class="col-total">TOTAL (KD)</th>
+          <th class="col-service">${labels.service}</th>
+          <th class="col-code">${labels.code}</th>
+          <th class="col-qty">${labels.qty}</th>
+          <th class="col-price">${labels.unitPrice}</th>
+          <th class="col-total">${labels.total}</th>
         </tr>
       </thead>
       <tbody>
@@ -522,20 +580,20 @@ export function renderInvoiceHtml(invoice: InvoicePdfData): string {
 
     <div class="bottom-row">
       <div class="totals-box">
-        <div class="row"><span>Subtotal</span><span class="value">${formatMoney(invoice.subtotal)} KD</span></div>
+        <div class="row"><span>${labels.subtotal}</span><span class="value">${formatMoney(invoice.subtotal)} KD</span></div>
         ${chargesTotalsRows}
-        <div class="row" style="border-top: 1px solid #E5E7EF; padding-top: 8px; margin-top: 4px;"><span>Total</span><span class="value">${formatMoney(invoice.total)} KD</span></div>
-        <div class="row"><span>Paid</span><span class="value">${formatMoney(invoice.paid)} KD</span></div>
-        <div class="row remaining"><span>Remaining</span><span class="value">${formatMoney(invoice.remaining)} KD</span></div>
+        <div class="row" style="border-top: 1px solid #E5E7EF; padding-top: 8px; margin-top: 4px;"><span>${labels.total}</span><span class="value">${formatMoney(invoice.total)} KD</span></div>
+        <div class="row"><span>${labels.paid}</span><span class="value">${formatMoney(invoice.paid)} KD</span></div>
+        <div class="row remaining"><span>${labels.remaining}</span><span class="value">${formatMoney(invoice.remaining)} KD</span></div>
       </div>
       <div class="status-row" style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
         <div class="status-box">
-          <div class="label">PAYMENT STATUS</div>
-          <div class="value">${PAYMENT_STATUS_LABELS_EN[invoice.paymentStatus]}</div>
+          <div class="label">${labels.paymentStatus}</div>
+          <div class="value">${labels.paymentStatuses[invoice.paymentStatus]}</div>
         </div>
         <div class="status-box">
-          <div class="label">PAYMENT METHOD</div>
-          <div class="value">${lastPayment ? PAYMENT_METHOD_LABELS_EN[lastPayment.method] : '&mdash;'}</div>
+          <div class="label">${labels.paymentMethod}</div>
+          <div class="value">${lastPayment ? labels.paymentMethods[lastPayment.method] : '&mdash;'}</div>
         </div>
       </div>
     </div>

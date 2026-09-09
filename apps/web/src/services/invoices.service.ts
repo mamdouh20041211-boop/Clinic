@@ -41,7 +41,7 @@ export interface Invoice {
   replacedInvoiceId?: string | null;
   patient: {
     id: string;
-    civilId: string;
+    civilId: string | null;
     fullNameAr: string;
     phone?: string;
   };
@@ -138,6 +138,22 @@ class InvoicesService {
     }
 
     return response.json();
+  }
+
+  async downloadPdf(id: string, language: 'ar' | 'en'): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/invoices/${id}/pdf?lang=${language}`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to download invoice PDF');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `invoice-${id}-${language}.pdf`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.URL.revokeObjectURL(url);
   }
 
   async createInvoice(data: CreateInvoiceDto): Promise<Invoice> {

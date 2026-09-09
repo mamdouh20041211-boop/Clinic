@@ -110,7 +110,8 @@
     "submit": "Sign In",
     "invalidCredentials": "Incorrect email or password",
     "tooManyAttempts": "Too many login attempts. Please try again later.",
-    "accountInactive": "Your account has been deactivated. Please contact an administrator."
+    "accountInactive": "Your account has been deactivated. Please contact an administrator.",
+    "secureAccess": "Protected access for authorized clinic staff"
   },
   "dashboard": {
     "clinicLabel": "Specialized Clinics Center",
@@ -305,6 +306,16 @@
     "backToInvoices": "Back to invoices",
     "downloading": "Downloading...",
     "downloadPdf": "Download PDF",
+    "pdfDownloaded": "Invoice PDF downloaded",
+    "shareWhatsApp": "WhatsApp",
+    "whatsappMissingPhone": "This patient has no phone number",
+    "invoiceTitle": "Invoice",
+    "invoiceItems": "Invoice items",
+    "clinicNameEn": "Specialized Clinics Center",
+    "clinicNameAr": "مركز العيادات التخصصية",
+    "doctor": "Doctor",
+    "doctorName": "Dr. Nida Bukhadour",
+    "contact": "Contact",
     "issueInvoice": "Issue Invoice",
     "issueConfirm": "Issuing this invoice will finalize it. Continue?",
     "voidConfirm": "Are you sure you want to void this invoice?",

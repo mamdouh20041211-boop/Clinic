@@ -110,7 +110,8 @@
     "submit": "تسجيل الدخول",
     "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
     "tooManyAttempts": "محاولات تسجيل دخول كثيرة. يرجى المحاولة مرة أخرى لاحقًا.",
-    "accountInactive": "تم تعطيل حسابك. يرجى التواصل مع المسؤول."
+    "accountInactive": "تم تعطيل حسابك. يرجى التواصل مع المسؤول.",
+    "secureAccess": "دخول محمي لموظفي العيادة المصرح لهم"
   },
   "dashboard": {
     "clinicLabel": "مركز العيادات التخصصية",
@@ -305,6 +306,16 @@
     "backToInvoices": "رجوع للفواتير",
     "downloading": "جارٍ التحميل...",
     "downloadPdf": "تحميل PDF",
+    "pdfDownloaded": "تم تحميل ملف الفاتورة",
+    "shareWhatsApp": "واتساب",
+    "whatsappMissingPhone": "لا يوجد رقم هاتف لهذا المريض",
+    "invoiceTitle": "فاتورة",
+    "invoiceItems": "بنود الفاتورة",
+    "clinicNameEn": "Specialized Clinics Center",
+    "clinicNameAr": "مركز العيادات التخصصية",
+    "doctor": "الطبيب",
+    "doctorName": "د. نداء بوخضور",
+    "contact": "بيانات التواصل",
     "issueInvoice": "إصدار الفاتورة",
     "issueConfirm": "سيتم تثبيت الفاتورة وإصدارها نهائيًا. هل تريدين المتابعة؟",
     "voidConfirm": "هل أنت متأكد من إلغاء هذه الفاتورة؟",
