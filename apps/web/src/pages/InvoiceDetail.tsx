@@ -235,7 +235,7 @@ export default function InvoiceDetail() {
     const url = messageShareChannel === 'whatsapp'
       ? `https://wa.me/${phone}?text=${encodedMessage}`
       : messageShareChannel === 'telegram'
-        ? `https://t.me/share/url?text=${encodedMessage}`
+      ? `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodedMessage}`
         : `sms:${phone}?body=${encodedMessage}`;
 
     if (messageShareChannel === 'whatsapp') setWhatsappOpening(true);
