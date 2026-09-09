@@ -239,6 +239,10 @@ export default function InvoiceDetail() {
         : `sms:${phone}?body=${encodedMessage}`;
 
     if (messageShareChannel === 'whatsapp') setWhatsappOpening(true);
+    if (messageShareChannel === 'telegram') {
+      window.location.assign(url);
+      return;
+    }
     const popup = messageShareChannel === 'sms' ? true : window.open(url, '_blank', 'noopener,noreferrer');
     if (messageShareChannel === 'sms') window.location.href = url;
     if (!popup) {
@@ -252,9 +256,7 @@ export default function InvoiceDetail() {
       type: 'info',
       message: messageShareChannel === 'whatsapp'
         ? t('invoices.whatsappOpening')
-        : messageShareChannel === 'telegram'
-          ? t('invoices.telegramOpening')
-          : t('invoices.smsOpening'),
+        : t('invoices.smsOpening'),
     });
     window.setTimeout(() => {
       setShareActionPending(false);
