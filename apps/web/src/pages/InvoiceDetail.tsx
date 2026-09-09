@@ -231,37 +231,69 @@ export default function InvoiceDetail() {
 
     const message = messageShareMessage.trim() || buildShareMessage();
     setShareActionPending(true);
+    const channel = messageShareChannel;
     const encodedMessage = encodeURIComponent(message);
-    const url = messageShareChannel === 'whatsapp'
-      ? `https://wa.me/${phone}?text=${encodedMessage}`
-      : messageShareChannel === 'telegram'
-      ? `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodedMessage}`
-        : `sms:${phone}?body=${encodedMessage}`;
+    const language = i18n.language.startsWith('ar') ? 'ar' : 'en';
 
-    if (messageShareChannel === 'whatsapp') setWhatsappOpening(true);
-    if (messageShareChannel === 'telegram') {
-      window.location.assign(url);
-      return;
-    }
-    const popup = messageShareChannel === 'sms' ? true : window.open(url, '_blank', 'noopener,noreferrer');
-    if (messageShareChannel === 'sms') window.location.href = url;
-    if (!popup) {
-      setShareActionPending(false);
-      setWhatsappOpening(false);
-      showToast({ type: 'error', message: t('invoices.popupBlocked') });
-      return;
-    }
-    setMessageShareChannel(null);
-    showToast({
-      type: 'info',
-      message: messageShareChannel === 'whatsapp'
-        ? t('invoices.whatsappOpening')
-        : t('invoices.smsOpening'),
-    });
-    window.setTimeout(() => {
-      setShareActionPending(false);
-      setWhatsappOpening(false);
-    }, 1200);
+    void (async () => {
+      try {
+        showToast({ type: 'info', message: t('invoices.preparingInvoice') });
+        const file = await invoicesService.getPdfFile(id!, language, invoice?.invoiceNumber || id!);
+        showToast({ type: 'info', message: t('invoices.invoiceReadyToShare') });
+        const shareData = { files: [file], text: message, title: t('invoices.shareInvoiceTitle') };
+        const shareNavigator = navigator as globalThis.Navigator & {
+          share?: (data?: globalThis.ShareData) => Promise<void>;
+          canShare?: (data?: globalThis.ShareData) => boolean;
+        };
+        if (shareNavigator.share && shareNavigator.canShare?.(shareData)) {
+          await shareNavigator.share(shareData);
+          setMessageShareChannel(null);
+          showToast({ type: 'success', message: t('invoices.invoiceShared') });
+          return;
+        }
+
+        const downloadUrl = window.URL.createObjectURL(file);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.href = downloadUrl;
+        downloadAnchor.download = file.name;
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        window.setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 60_000);
+        showToast({ type: 'info', message: t('invoices.pdfDownloadedAttachManually') });
+
+        const url = channel === 'whatsapp'
+          ? `https://wa.me/${phone}?text=${encodedMessage}`
+          : channel === 'telegram'
+            ? `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodedMessage}`
+            : `sms:${phone}?body=${encodedMessage}`;
+        if (channel === 'whatsapp') setWhatsappOpening(true);
+        if (channel === 'telegram') {
+          window.location.assign(url);
+          return;
+        }
+        const popup = channel === 'sms' ? true : window.open(url, '_blank', 'noopener,noreferrer');
+        if (channel === 'sms') window.location.href = url;
+        if (!popup) {
+          showToast({ type: 'error', message: t('invoices.popupBlocked') });
+          return;
+        }
+        setMessageShareChannel(null);
+        showToast({
+          type: 'info',
+          message: channel === 'whatsapp' ? t('invoices.whatsappOpening') : t('invoices.smsOpening'),
+        });
+      } catch (error) {
+        if (error instanceof globalThis.DOMException && error.name === 'AbortError') {
+          showToast({ type: 'info', message: t('invoices.shareCancelled') });
+        } else {
+          showToast({ type: 'error', message: error instanceof Error ? error.message : t('invoices.pdfShareFailed') });
+        }
+      } finally {
+        setShareActionPending(false);
+        setWhatsappOpening(false);
+      }
+    })();
   };
 
   const shareInvoiceOnWhatsApp = () => {

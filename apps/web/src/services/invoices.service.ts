@@ -148,6 +148,11 @@ class InvoicesService {
     return response.blob();
   }
 
+  async getPdfFile(id: string, language: 'ar' | 'en', invoiceNumber: string): Promise<globalThis.File> {
+    const blob = await this.getPdfBlob(id, language);
+    return new globalThis.File([blob], `invoice-${invoiceNumber}.pdf`, { type: 'application/pdf' });
+  }
+
   async downloadPdf(id: string, language: 'ar' | 'en'): Promise<void> {
     const blob = await this.getPdfBlob(id, language);
     const url = window.URL.createObjectURL(blob);
