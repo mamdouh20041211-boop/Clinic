@@ -52,6 +52,14 @@ export default function Login() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#F4F8FC] px-4 py-10 sm:px-6">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <img
+          src="/assets/clinic-login-visual.jfif"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-[0.16] saturate-[0.65]"
+        />
+        <div className="absolute inset-0 bg-[#F4F8FC]/75" />
+      </div>
       <div className="pointer-events-none absolute -top-28 start-[-10%] h-72 w-[120%] rounded-[50%] bg-[#DDEBFA] sm:-top-44 sm:h-[26rem]" />
       <div className="pointer-events-none absolute -bottom-36 end-[-12%] h-72 w-[120%] rounded-[50%] bg-[#C8DCF4] sm:-bottom-52 sm:h-[28rem]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/80 to-transparent" />
@@ -64,10 +72,9 @@ export default function Login() {
             <p className="text-xs text-[#64748B]">Specialized Clinics Center</p>
           </div>
         </div>
-        <div className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/95 p-6 shadow-[0_22px_65px_rgba(16,47,99,0.18)] backdrop-blur sm:p-10">
+        <div className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white p-6 shadow-[0_22px_65px_rgba(16,47,99,0.18)] sm:p-10">
           <div className="absolute -end-16 -top-16 h-32 w-32 rounded-full bg-[#E7F0FB]" />
           <div className="relative mb-6 text-center">
-            <img src="/assets/clinic-login-visual.jfif" alt="" className="mx-auto mb-4 h-24 w-36 rounded-xl object-contain opacity-90 shadow-sm sm:h-28 sm:w-44" />
             <h1 className="text-[28px] font-bold text-[#102F63]">{t('login.title')}</h1>
             <p className="mt-1 text-[13px] text-[#64748B]">{t('login.subtitle')}</p>
           </div>
