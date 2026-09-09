@@ -123,6 +123,7 @@ export default function InvoiceDetail() {
   const [confirmReplacement, setConfirmReplacement] = useState(false);
   const [confirmReversePayment, setConfirmReversePayment] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [whatsappOpening, setWhatsappOpening] = useState(false);
 
   const downloadInvoicePdf = async () => {
     setPdfLoading(true);
@@ -136,9 +137,11 @@ export default function InvoiceDetail() {
     }
   };
 
-  const shareInvoiceOnWhatsApp = async () => {
-    const phone = (invoice?.patient.phone || '').replace(/\D/g, '');
-    if (!phone) {
+  const shareInvoiceOnWhatsApp = () => {
+    if (whatsappOpening) return;
+    const rawPhone = (invoice?.patient.phone || '').replace(/\D/g, '');
+    const phone = rawPhone.startsWith('965') ? rawPhone : rawPhone.length === 8 ? `965${rawPhone}` : rawPhone;
+    if (phone.length < 11 || phone.length > 15) {
       showToast({ type: 'error', message: t('invoices.whatsappMissingPhone') });
       return;
     }
@@ -146,7 +149,16 @@ export default function InvoiceDetail() {
     const message = language
       ? `فاتورة ${invoice?.invoiceNumber}\nالمريض: ${invoice?.patient.fullNameAr}\nالإجمالي: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nالمدفوع: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nالمتبقي: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nتم تجهيز ملف PDF للتنزيل. يرجى إرفاقه يدويًا في محادثة واتساب.`
       : `Invoice ${invoice?.invoiceNumber}\nPatient: ${invoice?.patient.fullNameAr}\nTotal: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nPaid: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nRemaining: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nThe PDF is ready to download. Please attach it manually in WhatsApp.`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+    setWhatsappOpening(true);
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    const popup = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    if (!popup) {
+      setWhatsappOpening(false);
+      showToast({ type: 'error', message: t('invoices.whatsappBlocked') });
+      return;
+    }
+    showToast({ type: 'info', message: t('invoices.whatsappOpening') });
+    window.setTimeout(() => setWhatsappOpening(false), 1200);
   };
 
   const handleRecordPayment = (e: React.FormEvent) => {
@@ -254,8 +266,8 @@ export default function InvoiceDetail() {
               <button onClick={downloadInvoicePdf} disabled={pdfLoading} className="inline-flex items-center gap-2 rounded-lg border border-[#173B78] px-3 py-2 text-sm font-semibold text-[#173B78] hover:bg-[#EEF3FA] disabled:opacity-50">
                 <Download size={16} /> {pdfLoading ? t('invoices.downloading') : t('invoices.downloadPdf')}
               </button>
-              <button onClick={shareInvoiceOnWhatsApp} className="inline-flex items-center gap-2 rounded-lg bg-[#128C7E] px-3 py-2 text-sm font-semibold text-white hover:bg-[#0E756A]">
-                <MessageCircle size={16} /> {t('invoices.shareWhatsApp')}
+              <button onClick={shareInvoiceOnWhatsApp} disabled={whatsappOpening} className="inline-flex items-center gap-2 rounded-lg bg-[#128C7E] px-3 py-2 text-sm font-semibold text-white hover:bg-[#0E756A] disabled:cursor-wait disabled:opacity-60">
+                <MessageCircle size={16} /> {whatsappOpening ? t('invoices.whatsappOpening') : t('invoices.shareWhatsApp')}
               </button>
               {invoice.status === 'DRAFT' && (
                 <button

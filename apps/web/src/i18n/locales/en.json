@@ -309,6 +309,8 @@
     "pdfDownloaded": "Invoice PDF downloaded",
     "shareWhatsApp": "WhatsApp",
     "whatsappMissingPhone": "This patient has no phone number",
+    "whatsappBlocked": "Your browser blocked WhatsApp. Allow pop-ups and try again.",
+    "whatsappOpening": "Opening WhatsApp...",
     "invoiceTitle": "Invoice",
     "invoiceItems": "Invoice items",
     "clinicNameEn": "Specialized Clinics Center",

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { setAccessToken as setInMemoryAccessToken } from '../config/auth-token';
+import { apiBaseUrl } from '../config/api';
 
 interface User {
   id: string;
@@ -19,8 +20,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // The access token itself is good for 15 minutes (see auth.service.ts on
 // the backend: expiresIn: '15m'). Refreshing every 13 minutes renews it
@@ -57,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // This recovers the session without needing localStorage for accessToken.
     const recoverSession = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/auth/refresh`, {
+        const response = await fetch(`${apiBaseUrl}/auth/refresh`, {
           method: 'POST',
           credentials: 'include',
         });
@@ -90,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, rememberMe = false) => {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
+    const response = await fetch(`${apiBaseUrl}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -117,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     clearRefreshTimer();
     try {
-      await fetch(`${API_URL}/api/auth/logout`, {
+      await fetch(`${apiBaseUrl}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -132,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshAccessToken = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/refresh`, {
+      const response = await fetch(`${apiBaseUrl}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
       });

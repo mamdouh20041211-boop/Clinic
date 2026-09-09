@@ -224,6 +224,7 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     src: local('Noto Naskh Arabic');
   }
   * { box-sizing: border-box; }
+  @page { size: A4; margin: 0; }
   body {
     font-family: 'Arial', 'Noto Sans Arabic', 'Noto Naskh Arabic', sans-serif;
     color: #1F2430;
@@ -233,9 +234,11 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     position: relative;
   }
   .page {
-    padding: 32px 40px 40px;
+    padding: 18px 22px 20px;
     border: 1px solid #111844;
-    margin: 16px;
+    margin: 6px;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
   .watermark {
     position: fixed;
@@ -251,60 +254,60 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     z-index: 10;
   }
   .top-bar {
-    height: 6px;
+    height: 4px;
     background: #111844;
-    margin: -32px -40px 24px;
+    margin: -18px -22px 12px;
   }
   .header {
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding-bottom: 16px;
+    gap: 12px;
+    padding-bottom: 8px;
     border-bottom: 3px double #111844;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
   .header .logo {
-    width: 80px;
-    height: 80px;
+    width: 58px;
+    height: 58px;
     flex-shrink: 0;
   }
   .header .clinic-name-ar {
     font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
-    font-size: 24px;
+    font-size: 18px;
     font-weight: bold;
     color: #111844;
     direction: rtl;
   }
   .header .clinic-name-en {
-    font-size: 22px;
+    font-size: 17px;
     font-weight: bold;
     color: #111844;
   }
   .doctor-block {
     text-align: center;
-    margin-bottom: 18px;
+    margin-bottom: 8px;
   }
   .doctor-block .doctor-name {
     font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
-    font-size: 16px;
+    font-size: 13px;
     font-weight: bold;
     color: #1F2430;
     direction: rtl;
   }
   .doctor-block .doctor-title {
     font-family: 'Noto Naskh Arabic', 'Noto Sans Arabic', sans-serif;
-    font-size: 13px;
+    font-size: 10px;
     color: #4B5694;
     direction: rtl;
     margin-top: 2px;
   }
   .invoice-title {
     text-align: center;
-    font-size: 26px;
+    font-size: 19px;
     font-weight: bold;
     color: #111844;
     letter-spacing: 2px;
-    margin: 18px 0 20px;
+    margin: 8px 0 10px;
   }
   .invoice-title .arrow {
     color: #4B5694;
@@ -315,12 +318,12 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     display: flex;
     border: 1px solid #111844;
     border-radius: 8px;
-    margin-bottom: 18px;
+    margin-bottom: 8px;
     overflow: hidden;
   }
   .meta-box .cell {
     flex: 1;
-    padding: 10px 16px;
+    padding: 6px 10px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -333,43 +336,43 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
     font-size: 16px;
   }
   .meta-box .cell .label {
-    font-size: 11px;
+    font-size: 8px;
     color: #8991A6;
     display: block;
   }
   .meta-box .cell .value {
-    font-size: 14px;
+    font-size: 11px;
     font-weight: bold;
     color: #111844;
   }
   .patient-box {
     border: 1px solid #111844;
     border-radius: 8px;
-    padding: 16px 20px;
-    margin-bottom: 18px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
   }
   .patient-box .patient-title {
     text-align: center;
-    font-size: 14px;
+    font-size: 11px;
     font-weight: bold;
     color: #111844;
     letter-spacing: 1px;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
     border-bottom: 1px solid #E5E7EF;
   }
   .patient-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px 24px;
+    gap: 5px 16px;
   }
   .patient-grid .field .label {
-    font-size: 11px;
+    font-size: 8px;
     color: #8991A6;
     margin-bottom: 2px;
   }
   .patient-grid .field .value {
-    font-size: 14px;
+    font-size: 11px;
     font-weight: bold;
     color: #1F2430;
   }
@@ -381,18 +384,20 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
   table.items {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
   table.items th {
     background: #111844;
     color: #FFFFFF;
-    padding: 9px 10px;
-    font-size: 12px;
+    padding: 5px 7px;
+    font-size: 9px;
     text-align: left;
   }
   table.items td {
-    padding: 9px 10px;
-    font-size: 13px;
+    padding: 5px 7px;
+    font-size: 10px;
     border-bottom: 1px solid #E5E7EF;
   }
   table.items tr:nth-child(even) td { background: #F6F7FA; }
@@ -403,70 +408,70 @@ export function renderInvoiceHtml(invoice: InvoicePdfData, language: 'ar' | 'en'
   }
   .replacement-note {
     text-align: center;
-    font-size: 12px;
+    font-size: 9px;
     color: #C4362B;
     font-weight: bold;
-    margin-bottom: 12px;
-    padding: 8px;
+    margin-bottom: 6px;
+    padding: 5px;
     border: 1px solid #C4362B;
     border-radius: 4px;
     background: #FEF2F2;
   }
   .bottom-row {
     display: flex;
-    gap: 20px;
-    margin-bottom: 18px;
+    gap: 10px;
+    margin-bottom: 8px;
   }
   .totals-box {
     flex: 1;
     border: 1px solid #111844;
     border-radius: 8px;
-    padding: 14px 18px;
+    padding: 8px 12px;
   }
   .totals-box .row {
     display: flex;
     justify-content: space-between;
-    padding: 4px 0;
-    font-size: 14px;
+    padding: 2px 0;
+    font-size: 10px;
     color: #1F2430;
   }
   .totals-box .row.remaining .value { color: #C4362B; font-weight: bold; }
   .totals-box .row .value { font-weight: bold; }
   .status-row {
     display: flex;
-    gap: 12px;
+    gap: 6px;
   }
   .status-box {
     flex: 1;
     border: 1px solid #111844;
     border-radius: 8px;
-    padding: 14px 12px;
+    padding: 7px 8px;
     text-align: center;
   }
   .status-box .label {
-    font-size: 11px;
+    font-size: 8px;
     color: #8991A6;
-    margin-bottom: 6px;
+    margin-bottom: 3px;
     letter-spacing: 0.5px;
   }
   .status-box .value {
-    font-size: 15px;
+    font-size: 11px;
     font-weight: bold;
     color: #111844;
   }
   .thanks {
     text-align: center;
     font-style: italic;
-    font-size: 13px;
+    font-size: 10px;
     color: #4B5694;
-    margin-bottom: 18px;
+    margin-bottom: 8px;
   }
   .footer-box {
     border: 1px solid #111844;
     border-radius: 8px;
-    padding: 14px 20px;
+    padding: 8px 12px;
     text-align: center;
-    font-size: 11px;
+    font-size: 8px;
     color: #4B5694;
   }
   .footer-box .clinic-name-ar {

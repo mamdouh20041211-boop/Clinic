@@ -309,6 +309,8 @@
     "pdfDownloaded": "تم تحميل ملف الفاتورة",
     "shareWhatsApp": "واتساب",
     "whatsappMissingPhone": "لا يوجد رقم هاتف لهذا المريض",
+    "whatsappBlocked": "حظر المتصفح فتح واتساب. اسمح بالنوافذ المنبثقة وحاول مرة أخرى.",
+    "whatsappOpening": "جارٍ فتح واتساب...",
     "invoiceTitle": "فاتورة",
     "invoiceItems": "بنود الفاتورة",
     "clinicNameEn": "Specialized Clinics Center",

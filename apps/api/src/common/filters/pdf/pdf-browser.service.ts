@@ -29,7 +29,7 @@ export class PdfBrowserService implements OnModuleDestroy {
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
-        margin: { top: '15mm', bottom: '15mm', left: '10mm', right: '10mm' },
+        margin: { top: '8mm', bottom: '8mm', left: '8mm', right: '8mm' },
       });
       return Buffer.from(pdfBuffer);
     } finally {
