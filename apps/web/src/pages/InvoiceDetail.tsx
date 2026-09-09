@@ -128,6 +128,7 @@ export default function InvoiceDetail() {
   const [shareActionPending, setShareActionPending] = useState(false);
   const [messageShareChannel, setMessageShareChannel] = useState<'whatsapp' | 'telegram' | 'sms' | null>(null);
   const [messageSharePhone, setMessageSharePhone] = useState('');
+  const [messageShareCountryCode, setMessageShareCountryCode] = useState('');
   const [messageShareMessage, setMessageShareMessage] = useState('');
   const shareMenuRef = useRef<HTMLDivElement>(null);
   const messageShareDialogRef = useRef<HTMLDivElement>(null);
@@ -170,17 +171,28 @@ export default function InvoiceDetail() {
     if (shareActionPending) return;
     setShareActionPending(true);
     setShareMenuOpen(false);
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    const printWindow = window.open('', '_blank');
     if (!printWindow) {
       setShareActionPending(false);
       showToast({ type: 'error', message: t('invoices.popupBlocked') });
       return;
     }
     printWindow.document.title = t('invoices.printInvoice');
+    printWindow.document.body.innerHTML = `<p style="font-family: sans-serif; padding: 2rem; text-align: center">${t('invoices.printLoading')}</p>`;
     try {
       const blob = await invoicesService.getPdfBlob(id!, i18n.language.startsWith('ar') ? 'ar' : 'en');
       const url = window.URL.createObjectURL(blob);
-      printWindow.location.href = url;
+      const frame = printWindow.document.createElement('iframe');
+      frame.title = t('invoices.printInvoice');
+      frame.src = url;
+      frame.style.cssText = 'border:0;height:100vh;width:100vw;display:block';
+      printWindow.document.body.innerHTML = '';
+      printWindow.document.body.style.margin = '0';
+      printWindow.document.body.appendChild(frame);
+      frame.addEventListener('load', () => {
+        printWindow.focus();
+        printWindow.print();
+      }, { once: true });
       showToast({ type: 'success', message: t('invoices.printReady') });
       window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
     } catch (error) {
@@ -198,22 +210,31 @@ export default function InvoiceDetail() {
       : `Invoice ${invoice?.invoiceNumber}\nPatient: ${invoice?.patient.fullNameAr}\nTotal: ${formatMoney(invoice?.total || 0, i18n.language)} ${t('common.currency')}\nPaid: ${formatMoney(invoice?.paid || 0, i18n.language)} ${t('common.currency')}\nRemaining: ${formatMoney(invoice?.remaining || 0, i18n.language)} ${t('common.currency')}\n\nThe PDF is ready to download. Attach it manually if needed.`;
   };
 
-  const normalizePhone = (value: string) => {
-    const rawPhone = value.replace(/\D/g, '');
-    return rawPhone.startsWith('965') ? rawPhone : rawPhone.length === 8 ? `965${rawPhone}` : rawPhone;
+  const knownCountryCodes = ['965', '20', '966', '971', '974', '973', '968'];
+  const normalizePhone = (value: string, countryCode: string) => {
+    let rawPhone = value.replace(/\D/g, '');
+    if (rawPhone.startsWith('00')) rawPhone = rawPhone.slice(2);
+    if (value.trim().startsWith('+') || (countryCode && rawPhone.startsWith(countryCode))) return rawPhone;
+    if (!countryCode && knownCountryCodes.some((code) => rawPhone.startsWith(code) && rawPhone.length >= code.length + 7)) return rawPhone;
+    if (rawPhone.startsWith('0')) rawPhone = rawPhone.replace(/^0+/, '');
+    return countryCode ? `${countryCode}${rawPhone}` : rawPhone;
   };
 
   const openMessageShareDialog = (channel: 'whatsapp' | 'telegram' | 'sms') => {
     setShareMenuOpen(false);
     setMessageShareChannel(channel);
-    setMessageSharePhone(normalizePhone(invoice?.patient.phone || ''));
+    setMessageSharePhone(invoice?.patient.phone || '');
+    setMessageShareCountryCode('');
     setMessageShareMessage(buildShareMessage());
   };
 
   const sendMessageShare = () => {
     if (!messageShareChannel || whatsappOpening || shareActionPending) return;
-    const phone = normalizePhone(messageSharePhone);
-    if (messageShareChannel !== 'telegram' && (phone.length < 11 || phone.length > 15)) {
+    const phone = normalizePhone(messageSharePhone, messageShareCountryCode);
+    const hasInternationalPrefix = messageSharePhone.trim().startsWith('+')
+      || messageSharePhone.trim().startsWith('00')
+      || knownCountryCodes.some((code) => phone.startsWith(code) && phone.length >= code.length + 7);
+    if (messageShareChannel !== 'telegram' && ((!messageShareCountryCode && !hasInternationalPrefix) || phone.length < 8 || phone.length > 15)) {
       showToast({ type: 'error', message: t('invoices.whatsappMissingPhone') });
       return;
     }
@@ -225,7 +246,7 @@ export default function InvoiceDetail() {
       ? `https://wa.me/${phone}?text=${encodedMessage}`
       : messageShareChannel === 'telegram'
         ? `https://t.me/share/url?url=&text=${encodedMessage}`
-        : `sms:?body=${encodedMessage}`;
+        : `sms:${phone}?body=${encodedMessage}`;
 
     if (messageShareChannel === 'whatsapp') setWhatsappOpening(true);
     const popup = messageShareChannel === 'sms' ? true : window.open(url, '_blank', 'noopener,noreferrer');
@@ -379,19 +400,19 @@ export default function InvoiceDetail() {
                 </div>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex w-full min-w-0 flex-wrap gap-2 sm:w-auto sm:justify-end">
               <div className="relative" ref={shareMenuRef}>
                 <button
                   type="button"
                   onClick={() => setShareMenuOpen((open) => !open)}
                   aria-expanded={shareMenuOpen}
                   aria-haspopup="menu"
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#111844] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1a237e] focus:outline-none focus:ring-2 focus:ring-[#4B5694] focus:ring-offset-2"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#111844] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1a237e] focus:outline-none focus:ring-2 focus:ring-[#4B5694] focus:ring-offset-2"
                 >
                   <Share2 size={16} /> {t('invoices.share')} <ChevronDown size={15} className={shareMenuOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
                 </button>
                 {shareMenuOpen && (
-                  <div role="menu" className="absolute end-0 top-full z-30 mt-2 w-64 overflow-hidden rounded-xl border border-[#DCE3EF] bg-white p-2 text-sm shadow-[0_16px_40px_rgba(16,47,99,0.18)]">
+                  <div role="menu" className="absolute end-0 top-full z-30 mt-2 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[#DCE3EF] bg-white p-2 text-sm shadow-[0_16px_40px_rgba(16,47,99,0.18)]">
                     <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-[#8991A6]">{t('invoices.shareSection')}</p>
                     <button type="button" role="menuitem" onClick={shareInvoiceOnWhatsApp} disabled={whatsappOpening || shareActionPending} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start font-medium transition hover:bg-[#F6F8FC] focus:bg-[#F6F8FC] focus:outline-none disabled:cursor-wait disabled:opacity-50 text-[#128C7E]">
                       <MessageCircle size={16} /> {whatsappOpening ? t('invoices.whatsappOpening') : t('invoices.shareWhatsApp')}
@@ -476,17 +497,37 @@ export default function InvoiceDetail() {
                 </div>
 
                 {messageShareChannel !== 'telegram' && (
-                  <label className="mb-4 block text-sm font-semibold text-[#344054]">
-                    {t('invoices.recipientPhone')}
-                    <input
-                      type="tel"
-                      value={messageSharePhone}
-                      onChange={(event) => setMessageSharePhone(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-[#DCE3EF] px-3 py-2 font-normal text-[#1F2430] outline-none focus:border-[#4B5694] focus:ring-2 focus:ring-[#4B5694]/20"
-                      dir="ltr"
-                      autoFocus
-                    />
-                  </label>
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-[#344054]">
+                      {t('invoices.recipientPhone')}
+                      <input
+                        type="tel"
+                        value={messageSharePhone}
+                        onChange={(event) => setMessageSharePhone(event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-[#DCE3EF] px-3 py-2 font-normal text-[#1F2430] outline-none focus:border-[#4B5694] focus:ring-2 focus:ring-[#4B5694]/20"
+                        dir="ltr"
+                        autoFocus
+                      />
+                    </label>
+                    <label className="mt-2 block text-sm font-semibold text-[#344054]">
+                      {t('invoices.countryCode')}
+                      <select
+                        value={messageShareCountryCode}
+                        onChange={(event) => setMessageShareCountryCode(event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-[#DCE3EF] px-3 py-2 font-normal text-[#1F2430] outline-none focus:border-[#4B5694] focus:ring-2 focus:ring-[#4B5694]/20"
+                        dir="ltr"
+                      >
+                        <option value="">{t('invoices.chooseCountryCode')}</option>
+                        <option value="965">Kuwait (+965)</option>
+                        <option value="20">Egypt (+20)</option>
+                        <option value="966">Saudi Arabia (+966)</option>
+                        <option value="971">United Arab Emirates (+971)</option>
+                        <option value="974">Qatar (+974)</option>
+                        <option value="973">Bahrain (+973)</option>
+                        <option value="968">Oman (+968)</option>
+                      </select>
+                    </label>
+                  </div>
                 )}
                 {messageShareChannel === 'telegram' && (
                   <label className="mb-4 block text-sm font-semibold text-[#344054]">
