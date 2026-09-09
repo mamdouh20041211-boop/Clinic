@@ -20,7 +20,15 @@ export class PdfBrowserService implements OnModuleDestroy {
     return this.browserPromise;
   }
 
-  async renderHtmlToPdf(html: string): Promise<Buffer> {
+  async renderHtmlToPdf(
+    html: string,
+    margin: { top: string; bottom: string; left: string; right: string } = {
+      top: '8mm',
+      bottom: '8mm',
+      left: '8mm',
+      right: '8mm',
+    },
+  ): Promise<Buffer> {
     const browser = await this.getBrowser();
     const page = await browser.newPage();
 
@@ -29,7 +37,7 @@ export class PdfBrowserService implements OnModuleDestroy {
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
-        margin: { top: '8mm', bottom: '8mm', left: '8mm', right: '8mm' },
+        margin,
       });
       return Buffer.from(pdfBuffer);
     } finally {

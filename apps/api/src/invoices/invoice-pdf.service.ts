@@ -13,6 +13,11 @@ export class InvoicePdfService {
   async generate(invoiceId: string, language: 'ar' | 'en') {
     const invoice = await this.invoicesService.findOne(invoiceId);
     const html = renderInvoiceHtml(invoice, language);
-    return this.pdfBrowserService.renderHtmlToPdf(html);
+    return this.pdfBrowserService.renderHtmlToPdf(html, {
+      top: '0',
+      bottom: '0',
+      left: '0',
+      right: '0',
+    });
   }
 }
