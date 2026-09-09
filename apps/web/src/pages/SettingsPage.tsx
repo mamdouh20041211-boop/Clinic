@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   UsersRound, Bell, ShieldCheck, FileClock, Server, Lock, DatabaseBackup,
-  CheckCircle2, XCircle, Loader2, Plus, X,
+  CheckCircle2, XCircle, Loader2, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usersService, AppUser } from '../services/users.service';
@@ -16,6 +16,7 @@ import { useToast } from '../contexts/ToastContext';
 import PageHeader from '../components/PageHeader';
 import Skeleton from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
+import ModalDialog from '../components/ModalDialog';
 
 const APP_VERSION = 'v1.0.0';
 
@@ -373,12 +374,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-4">
-      <div className="ui-card p-6 max-w-sm w-full">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-[#102F63]">{t('settings.addNewUser')}</h3>
-          <button onClick={onClose} aria-label={t('common.close')} className="text-[#94A3B8] hover:text-[#102F63]"><X size={18} /></button>
-        </div>
+    <ModalDialog open title={t('settings.addNewUser')} labelledBy="create-user-title" onClose={onClose}>
         {error && <div className="mb-3 px-3 py-2 bg-red-50 border border-red-100 text-[#C4362B] rounded-lg text-sm">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-3">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('settings.userName')} required className="ui-input" />
@@ -392,8 +388,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
             {submitting ? t('settings.creatingUser') : t('settings.createUser')}
           </button>
         </form>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 

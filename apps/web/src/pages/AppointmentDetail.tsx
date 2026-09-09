@@ -7,6 +7,7 @@ import { getReturnTo, preserveListState } from '../utils/listState';
 import { useToast } from '../contexts/ToastContext';
 import PageHeader from '../components/PageHeader';
 import Skeleton from '../components/Skeleton';
+import ModalDialog from '../components/ModalDialog';
 import { formatDateTime as formatLocalizedDateTime } from '../utils/dateFormat';
 
 export default function AppointmentDetail() {
@@ -246,10 +247,18 @@ export default function AppointmentDetail() {
         </div>
 
         {/* Cancel Dialog */}
-        {showCancelDialog && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('appointments.cancelReason')}</h3>
+        <ModalDialog
+          open={showCancelDialog}
+          title={t('appointments.cancelReason')}
+          labelledBy="cancel-appointment-title"
+          onClose={() => {
+            if (!cancelMutation.isPending) {
+              setShowCancelDialog(false);
+              setCancelReason('');
+              setCancelReasonType('');
+            }
+          }}
+        >
               
               <div className="space-y-3 mb-4">
                 <button
@@ -297,7 +306,7 @@ export default function AppointmentDetail() {
                 />
               )}
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
                   onClick={() => {
                     setShowCancelDialog(false);
@@ -316,9 +325,7 @@ export default function AppointmentDetail() {
                   {t('appointments.confirmCancellation')}
                 </button>
               </div>
-            </div>
-          </div>
-        )}
+        </ModalDialog>
       </div>
     </div>
   );

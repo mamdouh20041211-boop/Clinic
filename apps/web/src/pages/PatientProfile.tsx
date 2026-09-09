@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { patientsService } from '../services/patients.service';
 import { visitsService } from '../services/visits.service';
 import { invoicesService } from '../services/invoices.service';
@@ -14,6 +14,9 @@ import EmptyState from '../components/EmptyState';
 import Skeleton from '../components/Skeleton';
 import MobileRecordCard, { MobileRecordField } from '../components/MobileRecordCard';
 import { formatMoney } from '../utils/money';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 type TabType = 'overview' | 'visits' | 'invoices' | 'payments' | 'appointments';
 
@@ -21,9 +24,25 @@ export default function PatientProfile() {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const patientsListReturnTo = getReturnTo(searchParams.toString(), '/patients');
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const archiveMutation = useMutation({
+    mutationFn: () => patientsService.archivePatient(id!),
+    onSuccess: () => {
+      setShowArchiveDialog(false);
+      queryClient.invalidateQueries({ queryKey: ['patient', id] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      showToast({ type: 'success', message: t('feedback.patientArchived') });
+    },
+    onError: (archiveError: Error) => {
+      showToast({ type: 'error', message: archiveError.message || t('feedback.patientArchiveFailed') });
+    },
+  });
 
   const { data: patient, isLoading, error } = useQuery({
     queryKey: ['patient', id],
@@ -181,6 +200,15 @@ export default function PatientProfile() {
                 >
                   {t('patients.editData')}
                 </button>
+                {user?.role === 'ADMIN' && !patient.isArchived && (
+                  <button
+                    type="button"
+                    onClick={() => setShowArchiveDialog(true)}
+                    className="w-full rounded-md border border-red-200 bg-red-50 py-2 text-red-700 transition-colors hover:bg-red-100"
+                  >
+                    {t('patients.archivePatient')}
+                  </button>
+                )}
               </div>
 
               {/* Archive Status */}
@@ -190,6 +218,17 @@ export default function PatientProfile() {
                 </div>
               )}
             </div>
+            <ConfirmDialog
+              open={showArchiveDialog}
+              title={t('patients.archivePatient')}
+              message={t('patients.archiveWarning')}
+              confirmLabel={archiveMutation.isPending ? t('common.loading') : t('patients.confirmArchive')}
+              cancelLabel={t('common.cancel')}
+              destructive
+              loading={archiveMutation.isPending}
+              onConfirm={() => archiveMutation.mutate()}
+              onCancel={() => setShowArchiveDialog(false)}
+            />
           </div>
 
           {/* Tabbed Content Area */}

@@ -1,25 +1,26 @@
+import { lazy, Suspense } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import PatientsList from './pages/PatientsList'
-import PatientForm from './pages/PatientForm'
-import PatientProfile from './pages/PatientProfile'
-import AppointmentsList from './pages/AppointmentsList'
-import AppointmentForm from './pages/AppointmentForm'
-import AppointmentDetail from './pages/AppointmentDetail'
-import VisitsList from './pages/VisitsList'
-import VisitForm from './pages/VisitForm'
-import VisitDetail from './pages/VisitDetail'
-import ServicesList from './pages/ServicesList'
-import ServiceForm from './pages/ServiceForm'
-import InvoicesList from './pages/InvoicesList'
-import InvoiceForm from './pages/InvoiceForm'
-import InvoiceDetail from './pages/InvoiceDetail'
-import ReportsPage from './pages/ReportsPage'
-import DailyClosingPage from './pages/DailyClosingPage'
-import SettingsPage from './pages/SettingsPage'
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const PatientsList = lazy(() => import('./pages/PatientsList'))
+const PatientForm = lazy(() => import('./pages/PatientForm'))
+const PatientProfile = lazy(() => import('./pages/PatientProfile'))
+const AppointmentsList = lazy(() => import('./pages/AppointmentsList'))
+const AppointmentForm = lazy(() => import('./pages/AppointmentForm'))
+const AppointmentDetail = lazy(() => import('./pages/AppointmentDetail'))
+const VisitsList = lazy(() => import('./pages/VisitsList'))
+const VisitForm = lazy(() => import('./pages/VisitForm'))
+const VisitDetail = lazy(() => import('./pages/VisitDetail'))
+const ServicesList = lazy(() => import('./pages/ServicesList'))
+const ServiceForm = lazy(() => import('./pages/ServiceForm'))
+const InvoicesList = lazy(() => import('./pages/InvoicesList'))
+const InvoiceForm = lazy(() => import('./pages/InvoiceForm'))
+const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'))
+const ReportsPage = lazy(() => import('./pages/ReportsPage'))
+const DailyClosingPage = lazy(() => import('./pages/DailyClosingPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 import ProtectedRoute from './components/ProtectedRoute'
 import { ToastProvider } from './contexts/ToastContext'
 
@@ -31,6 +32,7 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <ToastProvider>
+            <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#F6F7FA] text-sm text-[#64748B]">Loading...</div>}>
             <Routes>
             <Route path="/login" element={<Login />} />
             <Route
@@ -203,6 +205,7 @@ function App() {
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Routes>
+            </Suspense>
           </ToastProvider>
         </BrowserRouter>
       </AuthProvider>

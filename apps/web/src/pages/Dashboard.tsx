@@ -70,8 +70,7 @@ export default function Dashboard() {
               <p className="mt-1 text-sm text-[#64748B]">{t('dashboard.subtitle')}</p>
             </div>
             <div className="text-start text-sm text-[#64748B] sm:text-end">
-              <div className="font-semibold text-[#102F63]">{t('dashboard.welcome', { name: user?.name || t('common.user') })}</div>
-              <div>{formatDate(new Date(), i18n.language)}</div>
+            <div>{formatDate(new Date(), i18n.language)}</div>
             </div>
           </div>
 
