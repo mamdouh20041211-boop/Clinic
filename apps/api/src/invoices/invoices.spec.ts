@@ -141,7 +141,26 @@ describe('Invoices Module Tests (E2E)', () => {
       // Draft invoices get temporary number, final INV-XXXXXX assigned at issuance
       expect(response.body.invoiceNumber).toMatch(/^DRAFT-/);
       expect(response.body.invoiceItems).toHaveLength(2);
+      const completedVisit = await prisma.visit.findUnique({
+        where: { id: testVisitId },
+        select: { status: true },
+      });
+      expect(completedVisit?.status).toBe('COMPLETED');
       testInvoiceId = response.body.id;
+    });
+
+    it('should reject downgrading a visit after an invoice exists', async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/visits/${testVisitId}/status`)
+       .set('Authorization', `Bearer ${adminAccessToken}`)
+        .send({ status: 'IN_PROGRESS' })
+        .expect(400);
+
+      const visit = await prisma.visit.findUnique({
+        where: { id: testVisitId },
+        select: { status: true },
+      });
+      expect(visit?.status).toBe('COMPLETED');
     });
 
     it('should reject invoice prices with more than two decimal places', async () => {
@@ -157,6 +176,33 @@ describe('Invoices Module Tests (E2E)', () => {
           items: [{ serviceId: testServiceAId, quantity: 1, unitPrice: 1.001 }],
         })
         .expect(400);
+
+      const unchangedVisit = await prisma.visit.findUnique({
+        where: { id: visit.id },
+        select: { status: true },
+      });
+      expect(unchangedVisit?.status).toBe('SCHEDULED');
+    });
+
+    it('should not invoice a cancelled visit', async () => {
+      const cancelledVisit = await prisma.visit.create({
+        data: { patientId: testPatientId, type: 'OTHER', status: 'CANCELLED', createdById: adminUserId },
+      });
+
+      await request(app.getHttpServer())
+        .post('/api/invoices')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .send({
+          visitId: cancelledVisit.id,
+          items: [{ serviceId: testServiceAId, quantity: 1 }],
+        })
+        .expect(400);
+
+      const visit = await prisma.visit.findUnique({
+        where: { id: cancelledVisit.id },
+        select: { status: true },
+      });
+      expect(visit?.status).toBe('CANCELLED');
     });
 
     it('should snapshot the service name and price on the invoice item', async () => {

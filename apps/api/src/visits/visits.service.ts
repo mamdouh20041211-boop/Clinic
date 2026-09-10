@@ -316,39 +316,60 @@ export class VisitsService {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    const visit = await this.findOne(id);
-    const currentStatus = visit.status;
-    const newStatus = updateStatusDto.status;
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Visit" WHERE id = ${id}::uuid FOR UPDATE`;
+      const visit = await tx.visit.findUnique({
+        where: { id },
+        include: VISIT_INCLUDE,
+      });
 
-    if (currentStatus === newStatus) {
-      return visit;
-    }
+      if (!visit) {
+        throw new NotFoundException('Visit not found');
+      }
 
-    const validTransitions = this.VALID_TRANSITIONS[currentStatus];
-    if (!validTransitions.includes(newStatus)) {
-      throw new BadRequestException(
-        `Cannot transition from ${currentStatus} to ${newStatus}. Valid transitions: ${validTransitions.join(', ') || 'none'}`,
-      );
-    }
+      const currentStatus = visit.status;
+      const newStatus = updateStatusDto.status;
 
-    const updated = await this.prisma.visit.update({
-      where: { id },
-      data: { status: newStatus },
-      include: VISIT_INCLUDE,
+      if (currentStatus === newStatus) {
+        return visit;
+      }
+
+      const hasInvoice = await tx.invoice.findFirst({
+        where: { visitId: id },
+        select: { id: true },
+      });
+      if (hasInvoice && newStatus !== 'COMPLETED') {
+        throw new BadRequestException('A visit with an invoice must remain COMPLETED');
+      }
+
+      const validTransitions = this.VALID_TRANSITIONS[currentStatus];
+      if (!validTransitions.includes(newStatus)) {
+        throw new BadRequestException(
+          `Cannot transition from ${currentStatus} to ${newStatus}. Valid transitions: ${validTransitions.join(', ') || 'none'}`,
+        );
+      }
+
+      const updated = await tx.visit.update({
+        where: { id },
+        data: { status: newStatus },
+        include: VISIT_INCLUDE,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'UPDATE_STATUS',
+          entityType: 'Visit',
+          entityId: id,
+          beforeState: { status: currentStatus },
+          afterState: { status: newStatus },
+          ipAddress,
+          userAgent,
+        },
+      });
+
+      return updated;
     });
-
-    await this.auditService.log(
-      userId,
-      'UPDATE_STATUS',
-      'Visit',
-      id,
-      { status: currentStatus },
-      { status: newStatus },
-      ipAddress,
-      userAgent,
-    );
-
-    return updated;
   }
 
   async findByPatientId(patientId: string, page: number = 1, limit: number = 20) {

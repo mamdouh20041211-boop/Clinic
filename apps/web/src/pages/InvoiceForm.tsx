@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { visitsService } from '../services/visits.service';
 import { servicesService } from '../services/services.service';
 import { invoicesService, CreateInvoiceDto } from '../services/invoices.service';
@@ -28,6 +28,7 @@ interface AdditionalCharge {
 export default function InvoiceForm() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const visitId = searchParams.get('visitId') || '';
   const returnTo = getReturnTo(searchParams.toString(), visitId ? `/visits/${visitId}` : '/invoices');
@@ -64,6 +65,10 @@ export default function InvoiceForm() {
   const createMutation = useMutation({
     mutationFn: (data: CreateInvoiceDto) => invoicesService.createInvoice(data),
     onSuccess: (invoice) => {
+      if (visitId) {
+        queryClient.invalidateQueries({ queryKey: ['visit', visitId] });
+        queryClient.invalidateQueries({ queryKey: ['visits'] });
+      }
       showToast({ type: 'success', message: t('feedback.invoiceCreated') });
       navigate(`/invoices/${invoice.id}?returnTo=${encodeURIComponent(returnTo)}`);
     },

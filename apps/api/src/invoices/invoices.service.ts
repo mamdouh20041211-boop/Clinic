@@ -89,6 +89,10 @@ export class InvoicesService {
         throw new NotFoundException('Visit not found');
       }
 
+      if (visit.status === 'CANCELLED') {
+        throw new BadRequestException('Cannot create an invoice for a cancelled visit');
+      }
+
       // Check for existing active invoices (DRAFT or ISSUED) for this visit
       // Historical VOID invoices are allowed to coexist
       const existingActiveInvoice = await tx.invoice.findFirst({
@@ -192,6 +196,26 @@ export class InvoicesService {
         },
         include: INVOICE_ITEM_INCLUDE,
       });
+
+      if (visit.status !== 'COMPLETED') {
+        await tx.visit.update({
+          where: { id: visit.id },
+          data: { status: 'COMPLETED' },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            userId,
+            action: 'UPDATE_STATUS',
+            entityType: 'Visit',
+            entityId: visit.id,
+            beforeState: { status: visit.status },
+            afterState: { status: 'COMPLETED', invoiceId: invoice.id },
+            ipAddress,
+            userAgent,
+          },
+        });
+      }
 
       // Audit log within transaction
       await tx.auditLog.create({

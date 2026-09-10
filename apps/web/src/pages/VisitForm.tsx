@@ -239,23 +239,14 @@ export default function VisitForm() {
               )}
             </div>
 
-            {/* Linked Appointment */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('visits.linkedAppointment')}
-              </label>
-              <input
-                type="text"
-                value={prefillAppointmentId ? t('visits.linkedAppointmentValue') : ''}
-                disabled={!!prefillAppointmentId}
-                readOnly
-                placeholder={t('visits.appointmentIdPlaceholder')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none"
-              />
-              {prefillAppointmentId && (
+            {prefillAppointmentId && (
+              <div className="rounded-md border border-gray-200 bg-gray-50 px-4 py-3">
+                <div className="text-sm font-medium text-gray-700">
+                  {t('visits.linkedAppointment')}
+                </div>
                 <p className="mt-1 text-sm text-gray-500">{t('visits.appointmentAutoLinked')}</p>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Diagnosis */}
             <div>
