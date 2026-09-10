@@ -104,15 +104,19 @@ The compose file pins the development project name to `clinic`, so `api`,
 `web`, and `postgres` always share the `clinic_default` network. Do not use
 manual `docker network connect` commands.
 
-Create or reset the local development administrator from inside the API
-container (never from Windows or against a non-development database):
+Create or reset the local development users from inside the API container
+(never from Windows or against a non-development database):
 
 ```bash
-docker compose exec api npm run seed:dev-admin
+docker compose exec -e DEV_ADMIN_EMAIL=admin@clinic.com -e DEV_ADMIN_PASSWORD='<strong-password>' \
+  -e DEV_RECEPTIONIST_EMAIL=receptionist@clinic.com -e DEV_RECEPTIONIST_PASSWORD='<strong-password>' \
+  api npm run seed:dev-admin
 ```
 
 This development-only command is idempotent and refuses to run unless it is
 inside the Compose API container targeting the local development database.
+It creates both the admin and receptionist development users without
+committing any real credentials into source control.
 
 The development container deliberately does not run `prisma migrate deploy`
 automatically. This protects existing local data created before migration

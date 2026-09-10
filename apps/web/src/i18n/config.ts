@@ -5,10 +5,17 @@ import ar from './locales/ar.json';
 
 const LANGUAGE_STORAGE_KEY = 'clinic_language';
 
+const getUrlLang = (): 'en' | 'ar' | null => {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const value = params.get('lang');
+  return value === 'ar' || value === 'en' ? value : null;
+};
+
 // English is the product's default language per the client's requirement —
 // only an explicit prior choice (saved below) switches it to Arabic.
 const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-const initialLanguage = savedLanguage === 'ar' || savedLanguage === 'en' ? savedLanguage : 'en';
+const initialLanguage = getUrlLang() ?? (savedLanguage === 'ar' || savedLanguage === 'en' ? savedLanguage : 'en');
 
 i18n.use(initReactI18next).init({
   resources: {

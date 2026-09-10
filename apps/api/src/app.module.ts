@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { HealthModule } from './health/health.module';
@@ -64,10 +64,20 @@ import { MaintenanceModule } from './common/maintenance/maintenance.module';
         };
       },
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 10,
-    }]),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const ttlSeconds = Number(configService.get<number>('AUTH_LOGIN_THROTTLE_TTL', 60));
+        const limit = Number(configService.get<number>('AUTH_LOGIN_THROTTLE_LIMIT', 10));
+        const ttlMs = Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? ttlSeconds * 1000 : 60000;
+
+        return [{
+          ttl: ttlMs,
+          limit: Number.isFinite(limit) && limit > 0 ? limit : 10,
+        }];
+      },
+    }),
     DatabaseModule,
     HealthModule,
     AuthModule,

@@ -5,9 +5,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
 export default function Login() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuth();
+  const isArabic = i18n.language === 'ar';
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -51,7 +52,7 @@ export default function Login() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#F4F8FC] px-4 py-10 sm:px-6">
+    <div dir={isArabic ? 'rtl' : 'ltr'} className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#F4F8FC] px-4 py-10 sm:px-6">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <img
           src="/assets/clinic-login-visual.jfif"
@@ -64,7 +65,7 @@ export default function Login() {
       <div className="pointer-events-none absolute -bottom-36 end-[-12%] h-72 w-[120%] rounded-[50%] bg-[#C8DCF4] sm:-bottom-52 sm:h-[28rem]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/80 to-transparent" />
 
-      <main className="relative z-10 w-full max-w-[480px]">
+      <main dir={isArabic ? 'rtl' : 'ltr'} className="relative z-10 w-full max-w-[480px]">
         <div className="mb-5 flex items-center justify-center gap-3">
           <img src="/assets/logo.png" alt="" className="h-14 w-14 rounded-2xl bg-white object-contain p-1.5 shadow-md" />
           <div className="text-start">
@@ -86,7 +87,7 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} dir={isArabic ? 'rtl' : 'ltr'} className="space-y-5">
             <div>
               <label className="block text-[13px] font-medium text-[#102F63] mb-2">{t('login.email')}</label>
               <div className="relative">
@@ -95,6 +96,7 @@ export default function Login() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  dir={isArabic ? 'rtl' : 'ltr'}
                   className="ui-input ps-11"
                   placeholder={t('login.emailPlaceholder')}
                   required
@@ -111,6 +113,7 @@ export default function Login() {
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  dir={isArabic ? 'rtl' : 'ltr'}
                   className="ui-input ps-11 pe-11"
                   placeholder={t('login.passwordPlaceholder')}
                   required
@@ -128,7 +131,7 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <label className="flex items-center gap-2 text-[13px] text-[#64748B] cursor-pointer select-none">
                 <input
                   type="checkbox"
