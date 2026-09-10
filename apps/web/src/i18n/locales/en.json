@@ -461,7 +461,8 @@
     "writeReasonPlaceholder": "Write the reason...",
     "confirmCancel": "Confirm Cancellation",
     "dateTimeLabel": "Date & Time",
-    "patientArchived": "Archived patients cannot be booked for new appointments."
+    "patientArchived": "Archived patients cannot be booked for new appointments.",
+    "selectedPatient": "Selected patient"
   },
   "reports": {
     "subtitle": "Comprehensive analytics on clinic performance and financial growth indicators",

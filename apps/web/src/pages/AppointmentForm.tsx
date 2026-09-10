@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { appointmentsService, CreateAppointmentDto, UpdateAppointmentDto } from '../services/appointments.service';
-import { patientsService } from '../services/patients.service';
+import { Patient, patientsService } from '../services/patients.service';
 import { useTranslation } from 'react-i18next';
 import DateInput from '../components/DateInput';
 import TimeInput from '../components/TimeInput';
@@ -27,8 +27,10 @@ export default function AppointmentForm() {
     notes: '',
   });
   const [patientSearch, setPatientSearch] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [highlightedPatientIndex, setHighlightedPatientIndex] = useState(-1);
   const initialFormData = useMemo(() => ({ patientId: prefillPatientId, scheduledAt: '', notes: '' }), [prefillPatientId]);
 
   const { data: existingAppointment, isLoading: isLoadingAppointment } = useQuery({
@@ -51,6 +53,15 @@ export default function AppointmentForm() {
     };
     setFormData(next);
     setPatientSearch(existingAppointment.patient.fullNameAr);
+    setSelectedPatient({
+      id: existingAppointment.patient.id,
+      civilId: existingAppointment.patient.civilId,
+      fullNameAr: existingAppointment.patient.fullNameAr,
+      phone: existingAppointment.patient.phone,
+      isArchived: false,
+      createdAt: '',
+      updatedAt: '',
+    });
   }, [existingAppointment]);
 
   const { data: prefilledPatient } = useQuery({
@@ -59,15 +70,10 @@ export default function AppointmentForm() {
     enabled: !isEdit && !!prefillPatientId,
   });
 
-  const { data: selectedPatient } = useQuery({
-    queryKey: ['appointment-selected-patient', formData.patientId],
-    queryFn: () => patientsService.getPatient(formData.patientId),
-    enabled: !!formData.patientId,
-  });
-
   useEffect(() => {
     if (prefilledPatient && !isEdit) {
       setPatientSearch(prefilledPatient.fullNameAr);
+      setSelectedPatient(prefilledPatient);
       setFormData((previous) => ({ ...previous, patientId: prefilledPatient.id }));
     }
   }, [prefilledPatient, isEdit]);
@@ -97,7 +103,7 @@ export default function AppointmentForm() {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.patientId) {
+    if (!formData.patientId || !selectedPatient || selectedPatient.id !== formData.patientId) {
       newErrors.patientId = t('visits.patientRequired');
     } else if (selectedPatient?.isArchived) {
       newErrors.patientId = t('appointments.patientArchived');
@@ -130,14 +136,49 @@ export default function AppointmentForm() {
     saveMutation.mutate(formData);
   };
 
-  const handlePatientSelect = (patientId: string, patientName: string) => {
-    setFormData((prev) => ({ ...prev, patientId }));
-    setPatientSearch(patientName);
+  const handlePatientSelect = (patient: Patient) => {
+    if (patient.isArchived) {
+      setErrors((previous) => ({ ...previous, patientId: t('appointments.patientArchived') }));
+      return;
+    }
+    setFormData((prev) => ({ ...prev, patientId: patient.id }));
+    setSelectedPatient(patient);
+    setPatientSearch(patient.fullNameAr);
     setShowPatientDropdown(false);
+    setHighlightedPatientIndex(-1);
+    setErrors((previous) => ({ ...previous, patientId: '' }));
   };
 
   const handleCancel = () => {
     requestNavigation(() => navigate(returnTo));
+  };
+
+  const handlePatientSearchChange = (value: string) => {
+    setPatientSearch(value);
+    setShowPatientDropdown(true);
+    setHighlightedPatientIndex(-1);
+    setErrors((previous) => ({ ...previous, patientId: '' }));
+    if (!selectedPatient || value.trim() !== selectedPatient.fullNameAr) {
+      setSelectedPatient(null);
+      setFormData((previous) => ({ ...previous, patientId: '' }));
+    }
+  };
+
+  const handlePatientKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown' && patients.length > 0) {
+      event.preventDefault();
+      setShowPatientDropdown(true);
+      setHighlightedPatientIndex((previous) => Math.min(previous + 1, patients.length - 1));
+    } else if (event.key === 'ArrowUp' && patients.length > 0) {
+      event.preventDefault();
+      setHighlightedPatientIndex((previous) => Math.max(previous - 1, 0));
+    } else if (event.key === 'Enter' && highlightedPatientIndex >= 0 && patients[highlightedPatientIndex]) {
+      event.preventDefault();
+      handlePatientSelect(patients[highlightedPatientIndex]);
+    } else if (event.key === 'Escape') {
+      setShowPatientDropdown(false);
+      setHighlightedPatientIndex(-1);
+    }
   };
 
   return (
@@ -169,24 +210,26 @@ export default function AppointmentForm() {
               <input
                 type="text"
                 value={patientSearch}
-                onChange={(e) => {
-                  setPatientSearch(e.target.value);
-                  setFormData((prev) => ({ ...prev, patientId: '' }));
-                  setErrors((prev) => ({ ...prev, patientId: '' }));
-                  setShowPatientDropdown(true);
-                }}
+                onChange={(e) => handlePatientSearchChange(e.target.value)}
                 onBlur={() => window.setTimeout(() => setShowPatientDropdown(false), 150)}
                 onFocus={() => setShowPatientDropdown(true)}
+                onKeyDown={handlePatientKeyDown}
                 role="combobox"
                 aria-expanded={showPatientDropdown && patients.length > 0}
                 aria-controls="appointment-patient-options"
                 aria-autocomplete="list"
+                aria-activedescendant={highlightedPatientIndex >= 0 ? `appointment-patient-option-${patients[highlightedPatientIndex]?.id}` : undefined}
                 placeholder={t('visits.patientSearchPlaceholder')}
                 className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#111844] ${errors.patientId ? 'border-red-500' : 'border-gray-300'
                   }`}
               />
               {errors.patientId && (
                 <p className="mt-1 text-sm text-red-600">{errors.patientId}</p>
+              )}
+              {selectedPatient && !errors.patientId && (
+                <p className="mt-1 text-sm text-green-700" role="status">
+                  {t('appointments.selectedPatient')}: {selectedPatient.fullNameAr}
+                </p>
               )}
 
               {/* Patient Dropdown */}
@@ -196,18 +239,24 @@ export default function AppointmentForm() {
                     <button
                       key={patient.id}
                       type="button"
+                      id={`appointment-patient-option-${patient.id}`}
                       onMouseDown={(event) => {
                         event.preventDefault();
-                        handlePatientSelect(patient.id, patient.fullNameAr);
+                        handlePatientSelect(patient);
                       }}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
-                          handlePatientSelect(patient.id, patient.fullNameAr);
+                          handlePatientSelect(patient);
                         }
                       }}
                       role="option"
-                      className="w-full px-4 py-3 text-right hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                      aria-selected={highlightedPatientIndex >= 0 && patients[highlightedPatientIndex]?.id === patient.id}
+                      className={`w-full px-4 py-3 text-right border-b border-gray-100 last:border-b-0 ${
+                        highlightedPatientIndex >= 0 && patients[highlightedPatientIndex]?.id === patient.id
+                          ? 'bg-gray-100'
+                          : 'hover:bg-gray-100'
+                      }`}
                     >
                       <div className="font-medium text-gray-900">{patient.fullNameAr}</div>
                       <div className="text-sm text-gray-500">

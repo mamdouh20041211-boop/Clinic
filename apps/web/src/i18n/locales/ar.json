@@ -461,7 +461,8 @@
     "writeReasonPlaceholder": "اكتب السبب...",
     "confirmCancel": "تأكيد الإلغاء",
     "dateTimeLabel": "التاريخ والوقت",
-    "patientArchived": "لا يمكن حجز مواعيد جديدة للمرضى المؤرشفين."
+    "patientArchived": "لا يمكن حجز مواعيد جديدة للمرضى المؤرشفين.",
+    "selectedPatient": "المريض المحدد"
   },
   "reports": {
     "subtitle": "تحليلات شاملة لأداء العيادة ومؤشرات النمو المالية",
