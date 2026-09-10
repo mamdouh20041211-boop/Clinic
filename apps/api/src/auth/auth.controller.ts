@@ -1,6 +1,5 @@
 import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, HttpStatus, Res, Req } from '@nestjs/common';
 import { Response } from 'express';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -10,13 +9,14 @@ import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { UnauthorizedException } from '@nestjs/common';
+import { AuthThrottlerGuard } from './guards/auth-throttler.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(AuthThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   async login(@Req() req, @Res({ passthrough: true }) res: Response, @Body() loginDto: LoginDto) {
     const ipAddress = req.ip || req.connection.remoteAddress;

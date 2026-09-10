@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { AuthThrottlerGuard } from './guards/auth-throttler.guard';
 import { DatabaseModule } from '../database/database.module';
 import { AuditModule } from '../audit/audit.module';
 
@@ -25,7 +26,7 @@ import { AuditModule } from '../audit/audit.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, AuthThrottlerGuard],
   exports: [AuthService],
 })
 export class AuthModule { }
