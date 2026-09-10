@@ -224,7 +224,7 @@ describe('Patients Module Tests (E2E)', () => {
     it('should search by a masked Civil ID pattern and Arabic-Indic digits', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/patients?search=١٢٣٤٥X٧٨٩٠١')
-        .set('Authorization', `******
+        .set('Authorization', `Bearer ${adminAccessToken}`)
         .expect(200);
 
       expect(response.body.data.length).toBe(1);
