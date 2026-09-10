@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -16,16 +17,24 @@ export class ServicesService {
     // Trim service name
     const name = createServiceDto.name.trim();
 
-    const service = await this.prisma.service.create({
-      data: {
-        name,
-        code: createServiceDto.code,
-        description: createServiceDto.description,
-        currentPrice: createServiceDto.currentPrice,
-        isActive: createServiceDto.isActive !== undefined ? createServiceDto.isActive : true,
-        createdById: userId,
-      },
-    });
+    let service;
+    try {
+      service = await this.prisma.service.create({
+        data: {
+          name,
+          code: createServiceDto.code?.trim() || undefined,
+          description: createServiceDto.description?.trim() || undefined,
+          currentPrice: createServiceDto.currentPrice,
+          isActive: createServiceDto.isActive !== undefined ? createServiceDto.isActive : true,
+          createdById: userId,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('A service with this code already exists');
+      }
+      throw error;
+    }
 
     await this.auditService.log(
       userId,

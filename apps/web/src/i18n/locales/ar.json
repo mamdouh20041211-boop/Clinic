@@ -460,7 +460,8 @@
     "reasonScheduleConflict": "تعارض بالمواعيد",
     "writeReasonPlaceholder": "اكتب السبب...",
     "confirmCancel": "تأكيد الإلغاء",
-    "dateTimeLabel": "التاريخ والوقت"
+    "dateTimeLabel": "التاريخ والوقت",
+    "patientArchived": "لا يمكن حجز مواعيد جديدة للمرضى المؤرشفين."
   },
   "reports": {
     "subtitle": "تحليلات شاملة لأداء العيادة ومؤشرات النمو المالية",

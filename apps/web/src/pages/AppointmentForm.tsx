@@ -59,6 +59,12 @@ export default function AppointmentForm() {
     enabled: !isEdit && !!prefillPatientId,
   });
 
+  const { data: selectedPatient } = useQuery({
+    queryKey: ['appointment-selected-patient', formData.patientId],
+    queryFn: () => patientsService.getPatient(formData.patientId),
+    enabled: !!formData.patientId,
+  });
+
   useEffect(() => {
     if (prefilledPatient && !isEdit) {
       setPatientSearch(prefilledPatient.fullNameAr);
@@ -73,7 +79,7 @@ export default function AppointmentForm() {
     enabled: patientSearch.length >= 2,
   });
 
-  const patients = patientsData?.data || [];
+  const patients = (patientsData?.data || []).filter((patient) => !patient.isArchived);
 
   const saveMutation = useMutation({
     mutationFn: (data: CreateAppointmentDto | UpdateAppointmentDto) =>
@@ -93,6 +99,8 @@ export default function AppointmentForm() {
 
     if (!formData.patientId) {
       newErrors.patientId = t('visits.patientRequired');
+    } else if (selectedPatient?.isArchived) {
+      newErrors.patientId = t('appointments.patientArchived');
     }
 
     if (!formData.scheduledAt) {

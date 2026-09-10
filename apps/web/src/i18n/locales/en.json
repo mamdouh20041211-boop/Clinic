@@ -460,7 +460,8 @@
     "reasonScheduleConflict": "Schedule conflict",
     "writeReasonPlaceholder": "Write the reason...",
     "confirmCancel": "Confirm Cancellation",
-    "dateTimeLabel": "Date & Time"
+    "dateTimeLabel": "Date & Time",
+    "patientArchived": "Archived patients cannot be booked for new appointments."
   },
   "reports": {
     "subtitle": "Comprehensive analytics on clinic performance and financial growth indicators",
