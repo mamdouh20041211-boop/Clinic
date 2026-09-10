@@ -400,6 +400,25 @@ describe('Visits Module Tests (E2E)', () => {
       expect(response.body).toHaveProperty('data');
     });
 
+    it('should include follow-up visits throughout an end date', async () => {
+      const visitDate = new Date(2026, 8, 9, 12, 0, 0, 0);
+      const visit = await prisma.visit.create({
+        data: {
+          patientId: testPatientId,
+          type: VisitType.FOLLOW_UP,
+          visitDate,
+          createdById: adminUserId,
+        },
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/visits?type=FOLLOW_UP&from=2026-09-09&to=2026-09-09')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .expect(200);
+
+      expect(response.body.data.some((item: { id: string }) => item.id === visit.id)).toBe(true);
+    });
+
     it('should support pagination', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/visits?page=1&limit=1')

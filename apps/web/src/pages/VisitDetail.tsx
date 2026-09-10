@@ -40,9 +40,10 @@ export default function VisitDetail() {
     enabled: !!id,
   });
 
-  // A visit can have at most one invoice (enforced by the backend), but the
-  // API returns it as an array (`invoices`), not a single `invoice` field.
-  const invoice = visit?.invoices?.[0];
+  const invoices = visit?.invoices ?? [];
+  const invoice = invoices.find((item) => item.status === 'ISSUED')
+    ?? invoices.find((item) => item.status === 'DRAFT')
+    ?? invoices[0];
 
   if (isLoading) {
     return (
@@ -160,37 +161,43 @@ export default function VisitDetail() {
         </h2>
         {invoice ? (
           <>
-            <div className="mb-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 md:grid-cols-4">
-              <div>
-                <div className="text-[#94A3B8] text-xs mb-1">{t('invoices.number')}</div>
-                <Link
-                  to={preserveListState(`/invoices/${invoice.id}`, { pathname: `/visits/${visit.id}`, search: '' })}
-                  className="font-medium text-[#1F2430] hover:text-[#102F63] hover:underline"
-                >
-                  {invoice.invoiceNumber}
-                </Link>
-              </div>
-              <div>
-                <div className="text-[#94A3B8] text-xs mb-1">{t('invoices.total')}</div>
-                <div className="font-medium text-[#1F2430]">{formatMoney(invoice.total, i18n.language)} {t('common.currency')}</div>
-              </div>
-              <div>
-                <div className="text-[#94A3B8] text-xs mb-1">{t('invoices.paid')}</div>
-                <div className="font-medium text-[#1F2430]">{formatMoney(invoice.paid, i18n.language)} {t('common.currency')}</div>
-              </div>
-              <div>
-                <div className="text-[#94A3B8] text-xs mb-1">{t('invoices.remaining')}</div>
-                <div className="font-medium text-[#C4362B]">{formatMoney(invoice.remaining, i18n.language)} {t('common.currency')}</div>
-              </div>
-            </div>
-            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <span className="ui-badge" style={{ background: 'rgba(23,59,120,0.08)', color: 'var(--brand-blue)' }}>
-                {PAYMENT_STATUS_LABELS[invoice.paymentStatus]}
-              </span>
-              <button onClick={() => navigate(preserveListState(`/invoices/${invoice.id}`, { pathname: `/visits/${visit.id}`, search: '' }))} className="btn-primary flex items-center gap-2 px-4 py-2 text-sm">
-                <ReceiptText size={16} strokeWidth={1.75} />
-                {t('visits.viewInvoiceBtn')}
-              </button>
+            <div className="space-y-3">
+              {invoices.map((invoiceRecord) => (
+                <div key={invoiceRecord.id} className="rounded-lg border border-[#E2E8F0] p-4">
+                  <div className="mb-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 md:grid-cols-4">
+                    <div>
+                      <div className="text-[#94A3B8] text-xs mb-1">{t('invoices.number')}</div>
+                      <Link
+                        to={preserveListState(`/invoices/${invoiceRecord.id}`, { pathname: `/visits/${visit.id}`, search: '' })}
+                        className="font-medium text-[#1F2430] hover:text-[#102F63] hover:underline"
+                      >
+                        {invoiceRecord.invoiceNumber}
+                      </Link>
+                    </div>
+                    <div>
+                      <div className="text-[#94A3B8] text-xs mb-1">{t('invoices.total')}</div>
+                      <div className="font-medium text-[#1F2430]">{formatMoney(invoiceRecord.total, i18n.language)} {t('common.currency')}</div>
+                    </div>
+                    <div>
+                      <div className="text-[#94A3B8] text-xs mb-1">{t('invoices.paid')}</div>
+                      <div className="font-medium text-[#1F2430]">{formatMoney(invoiceRecord.paid, i18n.language)} {t('common.currency')}</div>
+                    </div>
+                    <div>
+                      <div className="text-[#94A3B8] text-xs mb-1">{t('invoices.remaining')}</div>
+                      <div className="font-medium text-[#C4362B]">{formatMoney(invoiceRecord.remaining, i18n.language)} {t('common.currency')}</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="ui-badge" style={{ background: 'rgba(23,59,120,0.08)', color: 'var(--brand-blue)' }}>
+                      {invoiceRecord.status} · {PAYMENT_STATUS_LABELS[invoiceRecord.paymentStatus]}
+                    </span>
+                    <button onClick={() => navigate(preserveListState(`/invoices/${invoiceRecord.id}`, { pathname: `/visits/${visit.id}`, search: '' }))} className="btn-primary flex items-center gap-2 px-4 py-2 text-sm">
+                      <ReceiptText size={16} strokeWidth={1.75} />
+                      {t('visits.viewInvoiceBtn')}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         ) : (

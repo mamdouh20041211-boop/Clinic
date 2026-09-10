@@ -44,6 +44,20 @@ const VISIT_INCLUDE = {
   },
 };
 
+function parseDateBoundary(value: string, endOfDay: boolean): Date {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T00:00:00`)
+    : new Date(value);
+
+  if (endOfDay) {
+    date.setHours(23, 59, 59, 999);
+  } else {
+    date.setHours(0, 0, 0, 0);
+  }
+
+  return date;
+}
+
 @Injectable()
 export class VisitsService {
   // Same pattern as InvoicesService's VALID_TRANSITIONS — explicit allowed
@@ -153,8 +167,8 @@ export class VisitsService {
 
     if (from || to) {
       where.visitDate = {};
-      if (from) where.visitDate.gte = new Date(from);
-      if (to) where.visitDate.lte = new Date(to);
+      if (from) where.visitDate.gte = parseDateBoundary(from, false);
+      if (to) where.visitDate.lte = parseDateBoundary(to, true);
     }
 
     if (search) {
