@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { servicesService, CreateServiceDto, UpdateServiceDto } from '../services/services.service';
 import { useTranslation } from 'react-i18next';
 import { moneyToCents, normalizeMoneyInput } from '../utils/money';
@@ -15,6 +15,7 @@ export default function ServiceForm() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const returnTo = getReturnTo(searchParams.toString(), '/services');
   const { showToast } = useToast();
@@ -59,6 +60,7 @@ export default function ServiceForm() {
   const createMutation = useMutation({
     mutationFn: (data: CreateServiceDto) => servicesService.createService(data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       showToast({ type: 'success', message: t('feedback.serviceCreated') });
       navigate(returnTo);
     },
@@ -72,6 +74,7 @@ export default function ServiceForm() {
     mutationFn: (data: { id: string; dto: UpdateServiceDto }) =>
       servicesService.updateService(data.id, data.dto),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       showToast({ type: 'success', message: t('feedback.serviceUpdated') });
       navigate(returnTo);
     },

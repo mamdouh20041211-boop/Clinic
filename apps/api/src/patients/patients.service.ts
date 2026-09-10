@@ -4,6 +4,14 @@ import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 import { AuditService } from '../audit/audit.service';
 
+function normalizeCivilIdSearch(value: string): string {
+  return value
+    .trim()
+    .replace(/[\u0660-\u0669]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, (digit) => String(digit.charCodeAt(0) - 0x06F0))
+    .replace(/[\s-]/g, '');
+}
+
 @Injectable()
 export class PatientsService {
   constructor(
@@ -48,6 +56,7 @@ export class PatientsService {
     const where: {
       isArchived?: boolean;
       OR?: Array<{
+        id?: { in: string[] };
         civilId?: { contains: string; mode: 'insensitive' };
         fullNameAr?: { contains: string; mode: 'insensitive' };
         fullNameEn?: { contains: string; mode: 'insensitive' };
@@ -59,12 +68,27 @@ export class PatientsService {
       where.isArchived = isArchived;
     }
 
-    if (search) {
+    if (search?.trim()) {
+      const normalizedSearch = normalizeCivilIdSearch(search);
+      const maskedCivilId = /^[0-9x]+$/i.test(normalizedSearch) && /x/i.test(normalizedSearch)
+        ? normalizedSearch.replace(/x/gi, '[0-9]')
+        : null;
+      const maskedPatientIds = maskedCivilId
+        ? (await this.prisma.$queryRaw<Array<{ id: string }>>`
+            SELECT id
+            FROM "Patient"
+            WHERE "civilId" ~ ${`^${maskedCivilId}$`}
+          `).map((patient) => patient.id)
+        : [];
+
+      const civilIdFilter = maskedCivilId
+        ? { id: { in: maskedPatientIds } }
+        : { civilId: { contains: normalizedSearch, mode: 'insensitive' as const } };
       where.OR = [
-        { civilId: { contains: search, mode: 'insensitive' } },
-        { fullNameAr: { contains: search, mode: 'insensitive' } },
-        { fullNameEn: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
+        civilIdFilter,
+        { fullNameAr: { contains: search.trim(), mode: 'insensitive' } },
+        { fullNameEn: { contains: search.trim(), mode: 'insensitive' } },
+        { phone: { contains: normalizedSearch, mode: 'insensitive' } },
       ];
     }
 

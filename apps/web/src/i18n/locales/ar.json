@@ -147,6 +147,7 @@
     "lastVisit": "تاريخ آخر زيارة",
     "nextVisit": "الزيارة القادمة",
     "viewPatient": "عرض بيانات المريض",
+    "registerVisit": "تسجيل زيارة",
     "editPatient": "تعديل بيانات المريض",
     "bookAppointment": "حجز موعد",
     "itemPlural": "مريض",
@@ -608,7 +609,10 @@
     "invoiceCount": "عدد الفواتير",
     "invoicesByStatus": "الفواتير حسب حالة الدفع",
     "invoicesToday": "الفواتير",
-    "paymentsToday": "المدفوعات"
+    "paymentsToday": "المدفوعات",
+    "exporting": "جارٍ التصدير...",
+    "exportSuccess": "تم تصدير الإغلاق اليومي بنجاح",
+    "exportError": "فشل تصدير الإغلاق اليومي"
   },
   "notifications": {
     "backupDue": "حان وقت عمل نسخة احتياطية — آخر نسخة مر عليها أكتر من يوم",

@@ -172,7 +172,15 @@ class ReportsService {
       headers: this.getAuthHeaders(),
     });
     if (!response.ok) {
-      throw new Error('Failed to export report');
+      let message = `Failed to export report (${response.status})`;
+      try {
+        const error = await response.json();
+        message = Array.isArray(error.message) ? error.message.join(', ') : error.message || message;
+      } catch {
+        const text = await response.text();
+        if (text) message = text;
+      }
+      throw new Error(message);
     }
 
     const blob = await response.blob();

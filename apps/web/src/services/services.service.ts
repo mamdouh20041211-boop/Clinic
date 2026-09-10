@@ -102,8 +102,15 @@ class ServicesService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create service');
+      let message = `Failed to create service (${response.status})`;
+      try {
+        const error = await response.json();
+        message = Array.isArray(error.message) ? error.message.join(', ') : error.message || message;
+      } catch {
+        const text = await response.text();
+        if (text) message = text;
+      }
+      throw new Error(message);
     }
 
     return response.json();

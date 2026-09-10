@@ -235,6 +235,15 @@ export default function AppointmentDetail() {
                   </button>
                 )}
 
+                {appointment.status !== 'CANCELLED' && appointment.status !== 'NO_SHOW' && (
+                  <button
+                    onClick={() => navigate(`/visits/new?patientId=${encodeURIComponent(appointment.patientId)}&appointmentId=${encodeURIComponent(appointment.id)}&returnTo=${encodeURIComponent(`/appointments/${appointment.id}`)}`)}
+                    className="w-full py-2 bg-[#111844] text-white rounded-md hover:bg-[#1c2866] transition-colors"
+                  >
+                    {t('appointments.registerVisit')}
+                  </button>
+                )}
+
                 <Link
                   to={preserveListState(`/patients/${appointment.patient.id}`, { pathname: `/appointments/${appointment.id}`, search: '' })}
                   className="w-full py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"

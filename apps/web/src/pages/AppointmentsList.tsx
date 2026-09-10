@@ -11,6 +11,8 @@ import Skeleton from '../components/Skeleton';
 import MobileRecordCard, { MobileRecordField } from '../components/MobileRecordCard';
 
 type ViewType = 'calendar' | 'list';
+const APPOINTMENT_STATUSES = ['BOOKED', 'CONFIRMED', 'DONE', 'CANCELLED', 'NO_SHOW'] as const;
+type AppointmentStatus = typeof APPOINTMENT_STATUSES[number];
 
 export default function AppointmentsList() {
   const { t, i18n } = useTranslation();
@@ -23,7 +25,10 @@ export default function AppointmentsList() {
     const date = value ? new Date(`${value}T00:00:00`) : new Date();
     return Number.isNaN(date.getTime()) ? new Date() : date;
   });
-  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '');
+  const initialStatus = searchParams.get('status') as AppointmentStatus | null;
+  const [statusFilter, setStatusFilter] = useState<AppointmentStatus | ''>(
+    initialStatus && APPOINTMENT_STATUSES.includes(initialStatus) ? initialStatus : '',
+  );
 
   const formatDate = (date: Date) => {
     return date.toISOString().split('T')[0];
@@ -93,7 +98,9 @@ export default function AppointmentsList() {
     );
   }
 
-  const appointments = data?.data || [];
+  const appointments = (data?.data || []).filter((appointment) =>
+    !statusFilter || appointment.status === statusFilter
+  );
 
   // Generate time slots for calendar view
   const timeSlots = [];
@@ -163,7 +170,11 @@ export default function AppointmentsList() {
             {/* Status Filter */}
             <select
               value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setSearchParams((current) => { if (e.target.value) current.set('status', e.target.value); else current.delete('status'); return current; }); }}
+              onChange={(e) => {
+                const nextStatus = e.target.value as AppointmentStatus | '';
+                setStatusFilter(nextStatus);
+                setSearchParams((current) => { if (nextStatus) current.set('status', nextStatus); else current.delete('status'); return current; });
+              }}
               className="w-full rounded border border-gray-300 px-3 py-2 sm:w-auto sm:py-1"
             >
               <option value="">{t('common.allStatuses')}</option>

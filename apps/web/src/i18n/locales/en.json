@@ -147,6 +147,7 @@
     "lastVisit": "Last Visit",
     "nextVisit": "Next Visit",
     "viewPatient": "View patient",
+    "registerVisit": "Register visit",
     "editPatient": "Edit patient",
     "bookAppointment": "Book appointment",
     "itemPlural": "patients",
@@ -608,7 +609,10 @@
     "invoiceCount": "Number of Invoices",
     "invoicesByStatus": "Invoices by Payment Status",
     "invoicesToday": "Invoices",
-    "paymentsToday": "Payments"
+    "paymentsToday": "Payments",
+    "exporting": "Exporting...",
+    "exportSuccess": "Daily closing exported successfully",
+    "exportError": "Failed to export daily closing"
   },
   "notifications": {
     "backupDue": "A backup is due — the last one is over a day old",

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Printer, Calendar } from 'lucide-react';
+import { Printer, Calendar, FileSpreadsheet } from 'lucide-react';
 import { reportsService } from '../services/reports.service';
 import { formatDateTime } from '../utils/dateFormat';
 import DateInput from '../components/DateInput';
 import { formatMoney } from '../utils/money';
+import { useToast } from '../contexts/ToastContext';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import Skeleton from '../components/Skeleton';
@@ -24,6 +25,8 @@ function today(): string {
 export default function DailyClosingPage() {
   const { t, i18n } = useTranslation();
   const [date, setDate] = useState(today());
+  const [isExporting, setIsExporting] = useState(false);
+  const { showToast } = useToast();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['daily-closing', date],
@@ -34,6 +37,22 @@ export default function DailyClosingPage() {
     UNPAID: t('invoices.unpaid'),
     PARTIALLY_PAID: t('invoices.partiallyPaid'),
     PAID: t('invoices.paidInFull'),
+  };
+
+  const handleExportExcel = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      await reportsService.downloadExport('excel', date, date);
+      showToast({ type: 'success', message: t('dailyClosing.exportSuccess') });
+    } catch (exportError) {
+      showToast({
+        type: 'error',
+        message: exportError instanceof Error ? exportError.message : t('dailyClosing.exportError'),
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -53,6 +72,14 @@ export default function DailyClosingPage() {
               className="ui-input pr-10 w-auto"
             />
           </div>
+          <button
+            onClick={handleExportExcel}
+            disabled={isExporting || !data}
+            className="btn-secondary flex items-center gap-2 px-4 disabled:opacity-50"
+          >
+            <FileSpreadsheet size={17} strokeWidth={1.75} />
+            {isExporting ? t('dailyClosing.exporting') : t('reports.exportExcel')}
+          </button>
           <button
             onClick={() => window.print()}
             disabled={!data}

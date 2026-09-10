@@ -221,6 +221,16 @@ describe('Patients Module Tests (E2E)', () => {
       expect(response.body.data[0].civilId).toBe('12345678901');
     });
 
+    it('should search by a masked Civil ID pattern and Arabic-Indic digits', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/patients?search=١٢٣٤٥X٧٨٩٠١')
+        .set('Authorization', `******
+        .expect(200);
+
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].civilId).toBe('12345678901');
+    });
+
     it('should search by Arabic name', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/patients?search=سارة')

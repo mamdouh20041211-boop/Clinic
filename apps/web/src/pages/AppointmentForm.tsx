@@ -18,17 +18,18 @@ export default function AppointmentForm() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const [searchParams] = useSearchParams();
+  const prefillPatientId = searchParams.get('patientId') || '';
   const returnTo = getReturnTo(searchParams.toString(), '/appointments');
   const { showToast } = useToast();
   const [formData, setFormData] = useState<CreateAppointmentDto>({
-    patientId: '',
+    patientId: prefillPatientId,
     scheduledAt: '',
     notes: '',
   });
   const [patientSearch, setPatientSearch] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
-  const initialFormData = useMemo(() => ({ patientId: '', scheduledAt: '', notes: '' }), []);
+  const initialFormData = useMemo(() => ({ patientId: prefillPatientId, scheduledAt: '', notes: '' }), [prefillPatientId]);
 
   const { data: existingAppointment, isLoading: isLoadingAppointment } = useQuery({
     queryKey: ['appointment', id],
@@ -51,6 +52,19 @@ export default function AppointmentForm() {
     setFormData(next);
     setPatientSearch(existingAppointment.patient.fullNameAr);
   }, [existingAppointment]);
+
+  const { data: prefilledPatient } = useQuery({
+    queryKey: ['patient', prefillPatientId],
+    queryFn: () => patientsService.getPatient(prefillPatientId),
+    enabled: !isEdit && !!prefillPatientId,
+  });
+
+  useEffect(() => {
+    if (prefilledPatient && !isEdit) {
+      setPatientSearch(prefilledPatient.fullNameAr);
+      setFormData((previous) => ({ ...previous, patientId: prefilledPatient.id }));
+    }
+  }, [prefilledPatient, isEdit]);
 
   // Search patients for typeahead
   const { data: patientsData } = useQuery({
@@ -149,10 +163,16 @@ export default function AppointmentForm() {
                 value={patientSearch}
                 onChange={(e) => {
                   setPatientSearch(e.target.value);
+                  setFormData((prev) => ({ ...prev, patientId: '' }));
+                  setErrors((prev) => ({ ...prev, patientId: '' }));
                   setShowPatientDropdown(true);
                 }}
-                onBlur={validateForm}
+                onBlur={() => window.setTimeout(() => setShowPatientDropdown(false), 150)}
                 onFocus={() => setShowPatientDropdown(true)}
+                role="combobox"
+                aria-expanded={showPatientDropdown && patients.length > 0}
+                aria-controls="appointment-patient-options"
+                aria-autocomplete="list"
                 placeholder={t('visits.patientSearchPlaceholder')}
                 className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#111844] ${errors.patientId ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -163,12 +183,22 @@ export default function AppointmentForm() {
 
               {/* Patient Dropdown */}
               {showPatientDropdown && patients.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                <div id="appointment-patient-options" role="listbox" className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                   {patients.map((patient) => (
                     <button
                       key={patient.id}
                       type="button"
-                      onClick={() => handlePatientSelect(patient.id, patient.fullNameAr)}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        handlePatientSelect(patient.id, patient.fullNameAr);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          handlePatientSelect(patient.id, patient.fullNameAr);
+                        }
+                      }}
+                      role="option"
                       className="w-full px-4 py-3 text-right hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
                     >
                       <div className="font-medium text-gray-900">{patient.fullNameAr}</div>
